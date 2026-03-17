@@ -27,8 +27,8 @@ from core.bias_engine import BiasEngine
 
 # Import new challenge modules
 from core.document_validator import validate_document, auto_detect_case_type
-from utils.pii_masking import mask_pii, pii_detection_summary
-from utils.case_law_search import search_case_laws, get_case_summary
+from utils.pii_masking import mask_pii, pii_detection_summary, mask_all
+from utils.case_law_search import search_case_laws
 from utils.document_summarizer import summarize_document, generate_report
 
 # Apply theme
@@ -70,7 +70,7 @@ st.markdown(
     }
 </style>
 """,
-    unsafe_allow_html=False,
+    unsafe_allow_html=True,
 )
 
 
@@ -516,13 +516,13 @@ def document_validation_page():
                 st.warning("⚠️ เอกสารไม่ครบถ้วน")
 
             # Score
-            score = result.get("completeness_score", 0)
-            st.metric("คะแนนความครบถ้วน", f"{score}%")
+            score = result.get("score", 0)
+            st.metric("คะแนนความครบถ้วน", f"{score * 100:.0f}%")
 
             # Missing items
-            if result.get("missing_items"):
-                st.markdown("### ❌ รายการที่ขาดหายไป")
-                for item in result["missing_items"]:
+            if result.get("missing_fields"):
+                st.subheader("📋 เอกสารที่ขาด")
+                for item in result.get("missing_fields", []):
                     st.markdown(f"- {item}")
 
             # Suggestions

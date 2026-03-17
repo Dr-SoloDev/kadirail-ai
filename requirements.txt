@@ -4,6 +4,9 @@
 # Core
 streamlit>=1.28.0
 
+# HTTP
+requests>=2.31.0
+
 # Data
 pandas>=2.0.0
 

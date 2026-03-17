@@ -302,5 +302,8 @@ def load_mock_cases(filename: str = "mock_cases.json") -> List[Dict[str, Any]]:
 
 
 if __name__ == "__main__":
-    count = save_mock_cases("/home/mkx-t/kadirail/data/mock_cases.json", 10000)
+    from pathlib import Path
+
+    DATA_DIR = Path(__file__).parent
+    count = save_mock_cases(str(DATA_DIR / "mock_cases.json"), 10000)
     print(f"สร้างข้อมูลคดีจำนวน {count} คดี เรียบร้อย!")

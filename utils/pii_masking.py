@@ -250,7 +250,12 @@ def mask_addresses(text: str) -> Tuple[str, List[PIIEntity]]:
 
 
 def mask_all(
-    text: str, include_names: bool = True, include_address: bool = True
+    text: str,
+    include_names: bool = True,
+    include_address: bool = True,
+    include_phone: bool = True,
+    include_email: bool = True,
+    include_national_id: bool = True,
 ) -> Dict[str, any]:
     """
     ปกปิด PII ทั้งหมดในเอกสาร
@@ -265,14 +270,17 @@ def mask_all(
     """
     all_entities = []
 
-    text, entities = mask_thai_id(text)
-    all_entities.extend(entities)
+    if include_national_id:
+        text, entities = mask_thai_id(text)
+        all_entities.extend(entities)
 
-    text, entities = mask_phone(text)
-    all_entities.extend(entities)
+    if include_phone:
+        text, entities = mask_phone(text)
+        all_entities.extend(entities)
 
-    text, entities = mask_email(text)
-    all_entities.extend(entities)
+    if include_email:
+        text, entities = mask_email(text)
+        all_entities.extend(entities)
 
     text, entities = mask_passport(text)
     all_entities.extend(entities)
@@ -334,3 +342,54 @@ def anonymize_case(case_data: Dict, salt: str = "kadirail") -> Dict:
             )
 
     return anonymized
+
+
+def mask_pii(text: str, config: dict) -> dict:
+    """
+    Mask PII with configurable options.
+
+    Args:
+        text: ข้อความที่ต้องการ mask
+        config: dict with keys: name, address, phone, email, national_id
+
+    Returns:
+        dict with masked_text and entities
+    """
+    include_names = config.get("name", True)
+    include_address = config.get("address", True)
+    include_phone = config.get("phone", True)
+    include_email = config.get("email", True)
+    include_national_id = config.get("national_id", True)
+
+    result = mask_all(
+        text,
+        include_names,
+        include_address,
+        include_phone,
+        include_email,
+        include_national_id,
+    )
+    return result
+
+
+def pii_detection_summary(result: dict) -> dict:
+    """
+    Generate summary of PII detection results.
+
+    Args:
+        result: dict from mask_all() or mask_pii()
+
+    Returns:
+        dict with counts by type
+    """
+    entities = result.get("entities", [])
+    return {
+        "total_detected": len(entities),
+        "names": sum(1 for e in entities if e.get("type") == "ชื่อ-นามสกุล"),
+        "national_ids": sum(
+            1 for e in entities if e.get("type") == "เลขประจำตัวประชาชน"
+        ),
+        "phones": sum(1 for e in entities if e.get("type") == "เบอร์โทรศัพท์"),
+        "emails": sum(1 for e in entities if e.get("type") == "อีเมล"),
+        "addresses": sum(1 for e in entities if e.get("type") == "ที่อยู่"),
+    }
