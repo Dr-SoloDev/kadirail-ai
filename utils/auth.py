@@ -6,8 +6,8 @@ Simple session-based authentication
 import hashlib
 import secrets
 import time
-from typing import Optional, Dict
 from dataclasses import dataclass, field
+from typing import Dict, Optional
 
 
 @dataclass

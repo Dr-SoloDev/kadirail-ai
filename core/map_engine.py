@@ -2,11 +2,11 @@
 KadiRail Map Engine - Core mapping logic with Mermaid.js visualization.
 """
 
-import streamlit as st
-import json
-from typing import Optional, List, Dict, Any
 from dataclasses import dataclass, field
 from datetime import datetime
+from typing import Any, Dict, List, Optional
+
+import streamlit as st
 
 
 @dataclass

@@ -1,8 +1,8 @@
-import random
 import json
+import random
+from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
-from typing import List, Dict, Any
-from dataclasses import dataclass, asdict
+from typing import Any, Dict, List
 
 
 @dataclass

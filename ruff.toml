@@ -11,6 +11,7 @@ select = [
 ignore = [
     "E501",  # line too long (handled by formatter)
     "B008",  # do not perform function calls in argument defaults
+    "E402",  # imports not at top (required for Streamlit)
 ]
 
 [lint.per-file-ignores]

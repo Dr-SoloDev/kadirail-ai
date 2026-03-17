@@ -5,11 +5,10 @@ Legal Case Navigation Tool for Thailand
 Transforms complex legal procedures into interactive "train station" maps.
 """
 
-import streamlit as st
-from datetime import datetime
 
-# Import auth module
-from utils.auth import get_auth_manager, require_auth
+import streamlit as st
+
+from utils.auth import get_auth_manager
 
 # Page config
 st.set_page_config(
@@ -20,16 +19,16 @@ st.set_page_config(
 )
 
 # Import core modules
-from core.map_engine import MapEngine, render_map, interactive_map_view, KadiRailMap
-from core.scanner import scan_document_ui
-from core.simulator import WhatIfSimulator
 from core.bias_engine import BiasEngine
 
 # Import new challenge modules
-from core.document_validator import validate_document, auto_detect_case_type
-from utils.pii_masking import mask_pii, pii_detection_summary, mask_all
+from core.document_validator import validate_document
+from core.map_engine import MapEngine, interactive_map_view, render_map
+from core.scanner import scan_document_ui
+from core.simulator import WhatIfSimulator
 from utils.case_law_search import search_case_laws
-from utils.document_summarizer import summarize_document, generate_report
+from utils.document_summarizer import generate_report, summarize_document
+from utils.pii_masking import mask_pii, pii_detection_summary
 
 # Apply theme
 # Note: unsafe_allow_html disabled for security

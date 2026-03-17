@@ -3,9 +3,9 @@ Document Validation Module - ตรวจสอบความครบถ้ว
 Challenge 2.2: ตรวจสอบความครบถ้วนขององค์ประกอบทางกฎหมายและเอกสารประกอบ
 """
 
-from typing import Dict, List, Any, Optional
-from dataclasses import dataclass
 import re
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional
 
 
 @dataclass

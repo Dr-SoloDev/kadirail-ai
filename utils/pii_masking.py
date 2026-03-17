@@ -3,10 +3,10 @@ PII (Personally Identifiable Information) Masking Module
 Challenge 3: ระบบจัดการข้อมูลที่สามารถปกปิดข้อมูลส่วนบุคคลได้อย่างปลอดภัย
 """
 
-import re
-from typing import Dict, List, Tuple, Optional
-from dataclasses import dataclass
 import hashlib
+import re
+from dataclasses import dataclass
+from typing import Dict, List, Tuple
 
 
 @dataclass

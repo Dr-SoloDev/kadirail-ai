@@ -2,7 +2,8 @@
 Mermaid diagram generator for KadiRail legal case maps.
 """
 
-from typing import List, Optional
+from typing import List
+
 from core.map_engine import KadiRailMap, LegalStep
 
 
@@ -113,7 +114,7 @@ def generate_gantt_mermaid(steps: List[LegalStep]) -> str:
     lines.append("    axisFormat  %d %b")
 
     # Calculate dates
-    from datetime import datetime, timedelta
+    from datetime import datetime
 
     start_date = datetime.now()
 

@@ -3,9 +3,9 @@ Document Summarizer Module - สรุปเอกสารคดี
 Challenge 4: สรุปเอกสาร ยกร่างรายงาน
 """
 
-from typing import Dict, List, Any, Optional
-from dataclasses import dataclass
 import re
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional
 
 
 @dataclass
@@ -213,7 +213,7 @@ def generate_report(case_data: Dict, summary: Dict) -> str:
     for rec in summary.get("recommendations", []):
         report += f"- {rec}\n"
 
-    report += f"""
+    report += """
 ---
 สร้างโดย KadiRail AI
 """

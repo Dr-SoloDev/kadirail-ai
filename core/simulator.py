@@ -3,8 +3,8 @@ What-If Simulator for legal case outcome prediction.
 """
 
 import random
-from typing import Dict, List, Any, Optional
 from dataclasses import dataclass
+from typing import Any, Dict, List
 
 
 @dataclass

@@ -2,9 +2,8 @@
 Bias Engine for detecting and correcting bias in legal information.
 """
 
-import re
-from typing import Dict, List, Any, Optional
 from dataclasses import dataclass
+from typing import Any, Dict, List, Optional
 
 
 @dataclass
@@ -242,7 +241,7 @@ def create_bias_report(analysis_result: Dict[str, Any]) -> str:
 
     # Summary
     score = analysis_result.get("bias_score", 0)
-    lines.append(f"## สรุปผล")
+    lines.append("## สรุปผล")
     lines.append(f"- คะแนนอคติ: {score:.1f}%")
 
     if score > 70:

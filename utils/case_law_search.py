@@ -3,9 +3,8 @@ Case Law Search Module - ค้นหาแนวคำพิพากษา
 Challenge 3: ค้นหาแนวคำพิพากษาได้อย่างแม่นยำ
 """
 
-from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
-import re
+from typing import Any, Dict, List, Optional
 
 
 @dataclass

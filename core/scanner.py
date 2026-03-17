@@ -5,10 +5,8 @@ Document Scanner with LINE OCR API integration.
 import base64
 import hashlib
 import hmac
-import time
-import requests
-from datetime import datetime
 from typing import Optional
+
 import streamlit as st
 
 
