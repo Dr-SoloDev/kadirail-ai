@@ -1,0 +1,10 @@
+# KadiRail AI - Hugging Face Spaces Configuration
+# https://huggingface.co/docs/hub/spaces-sdks-streamlit
+
+title: KadiRail AI
+emoji: ⚖️
+colorFrom: green
+colorTo: blue
+sdk: streamlit
+sdk_version: 1.28.0
+app_port: 8501

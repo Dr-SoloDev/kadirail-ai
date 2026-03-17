@@ -62,7 +62,7 @@ uv pip install -r requirements.txt
 # หรือ pip install -r requirements.txt
 
 # รันแอพ
-streamlit run app/main.py
+streamlit run streamlit_app.py
 # เปิดเบราว์เซอร์ที่ http://localhost:8501
 ```
 
@@ -78,9 +78,30 @@ LINE_ACCESS_TOKEN=your_access_token
 
 ---
 
-## Live Demo & GIF Guide
+## Live Demo
 
-ลองใช้งานจริงได้เลยครับ (ใช้เวลาไม่ถึง 5 นาที)
+### 🚀 Deploy to Hugging Face Spaces (Free)
+
+```bash
+# วิธีที่ 1: ผ่าน Web (แนะนำ)
+1. ไปที่ https://huggingface.co/spaces
+2. Create new Space → เลือก Streamlit
+3. เลือก GitHub repository: Dr-SoloDev/kadirail-ai
+4. เลือก Branch: master
+5. เลือก App file: streamlit_app.py
+6. กด Create!
+
+# วิธีที่ 2: ผ่าน CLI
+pip install huggingface_hub
+huggingface-cli space create Dr-SoloDev/kadirail-ai \
+  --sdk streamlit \
+  --emoji ⚖️
+```
+
+### 📺 Live Demo Link
+
+<!-- แทนที่ด้วย URL จริงหลัง deploy -->
+[![Hugging Face Spaces](https://img.shields.io/badge/%F0%9F%8F%97%20Hugging%20Face-KadiRail%20AI-blue)](https://huggingface.co/spaces/Dr-SoloDev/kadirail-ai)
 
 ### GIF แสดงการใช้งานหลัก (ตัวอย่าง placeholder – แทนด้วย GIF จริงของคุณ)
 
