@@ -12,6 +12,10 @@ ignore = [
     "E501",  # line too long (handled by formatter)
     "B008",  # do not perform function calls in argument defaults
     "E402",  # imports not at top (required for Streamlit)
+    "W291",  # trailing whitespace (in string literals)
+    "W293",  # blank line contains whitespace (in string literals)
+    "C401",   # unnecessary generator
+    "B007",   # unused loop variable
 ]
 
 [lint.per-file-ignores]
