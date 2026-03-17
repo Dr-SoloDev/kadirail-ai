@@ -19,3 +19,7 @@ python-dateutil>=2.8.0
 # Testing
 pytest>=7.0.0
 pytest-cov>=4.0.0
+
+# Linting & Security
+ruff>=0.1.0
+bandit>=1.7.0
