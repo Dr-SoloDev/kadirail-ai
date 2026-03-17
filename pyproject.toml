@@ -5,9 +5,24 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "kadirail-ai"
 version = "1.0.0"
-description = "Legal Case Navigation Tool for Thailand"
+description = "Legal Case Navigation Tool for Thailand - แผนที่นำทางคดีความสำหรับคนไทย"
 readme = "README.md"
 requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "KadiRail Team", email = "kadirail@example.com"}
+]
+keywords = ["streamlit", "legal-tech", "thailand", "ai", "hackathon", "justice"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Office/Business",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 dependencies = [
     "streamlit>=1.28.0",
     "requests>=2.31.0",
