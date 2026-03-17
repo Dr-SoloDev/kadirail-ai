@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KadiRail AI - เครื่องมือนำทางคดีสำหรับประเทศไทย</title>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #1e3a5f;
+            --secondary: #2d5a87;
+            --accent: #00d4aa;
+            --accent-dark: #00a88a;
+            --text: #1a1a2e;
+            --text-light: #4a4a6a;
+            --bg-light: #f8fafc;
+            --white: #ffffff;
+            --gradient-1: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 50%, #00d4aa 100%);
+            --gradient-2: linear-gradient(135deg, #00d4aa 0%, #00a88a 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Prompt', 'IBM Plex Sans', -apple-system, sans-serif;
+            color: var(--text);
+            background: var(--bg-light);
+            overflow-x: hidden;
+        }
+
+        /* Animated Background */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0d1b2a 100%);
+        }
+
+        .bg-animation::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(0, 212, 170, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(45, 90, 135, 0.2) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(0, 212, 170, 0.1) 0%, transparent 30%);
+            animation: pulse 8s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
+        .floating-shapes {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .shape {
+            position: absolute;
+            border: 1px solid rgba(0, 212, 170, 0.2);
+            border-radius: 50%;
+            animation: float 20s infinite;
+        }
+
+        .shape:nth-child(1) {
+            width: 300px;
+            height: 300px;
+            top: 10%;
+            left: 5%;
+            animation-delay: 0s;
+        }
+
+        .shape:nth-child(2) {
+            width: 200px;
+            height: 200px;
+            top: 60%;
+            right: 10%;
+            animation-delay: -5s;
+        }
+
+        .shape:nth-child(3) {
+            width: 150px;
+            height: 150px;
+            bottom: 20%;
+            left: 30%;
+            animation-delay: -10s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-30px) rotate(180deg); }
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            padding: 1rem 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(0, 212, 170, 0.1);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--white);
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--gradient-2);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--accent);
+            transition: width 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--accent);
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        .nav-cta {
+            padding: 0.6rem 1.5rem;
+            background: var(--accent);
+            color: var(--primary);
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .nav-cta:hover {
+            background: var(--accent-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 212, 170, 0.3);
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            padding: 8rem 5% 4rem;
+            position: relative;
+        }
+
+        .hero-content {
+            max-width: 600px;
+            z-index: 1;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(0, 212, 170, 0.1);
+            border: 1px solid rgba(0, 212, 170, 0.3);
+            border-radius: 50px;
+            color: var(--accent);
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 1.5rem;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            line-height: 1.1;
+            color: var(--white);
+            margin-bottom: 1.5rem;
+        }
+
+        .hero h1 span {
+            background: var(--gradient-2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: 1.125rem;
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.7;
+            margin-bottom: 2rem;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .btn-primary {
+            padding: 1rem 2rem;
+            background: var(--accent);
+            color: var(--primary);
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-dark);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(0, 212, 170, 0.3);
+        }
+
+        .btn-secondary {
+            padding: 1rem 2rem;
+            background: transparent;
+            color: var(--white);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        /* Hero Visual */
+        .hero-visual {
+            position: absolute;
+            right: 5%;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 500px;
+            height: 500px;
+        }
+
+        .rail-map {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .rail-line {
+            position: absolute;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(to bottom, var(--accent), var(--secondary), var(--accent));
+            left: 50%;
+            transform: translateX(-50%);
+            border-radius: 2px;
+        }
+
+        .rail-station {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: var(--primary);
+            border: 3px solid var(--accent);
+            border-radius: 50%;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+            font-weight: 700;
+            font-size: 0.875rem;
+            box-shadow: 0 0 30px rgba(0, 212, 170, 0.5);
+            animation: glow 2s ease-in-out infinite;
+        }
+
+        .rail-station:nth-child(2) { top: 5%; animation-delay: 0s; }
+        .rail-station:nth-child(3) { top: 25%; animation-delay: 0.3s; }
+        .rail-station:nth-child(4) { top: 50%; animation-delay: 0.6s; }
+        .rail-station:nth-child(5) { top: 75%; animation-delay: 0.9s; }
+        .rail-station:nth-child(6) { top: 95%; animation-delay: 1.2s; }
+
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(0, 212, 170, 0.5); }
+            50% { box-shadow: 0 0 40px rgba(0, 212, 170, 0.8); }
+        }
+
+        .station-label {
+            position: absolute;
+            left: 120px;
+            color: var(--white);
+            font-size: 0.875rem;
+            white-space: nowrap;
+            opacity: 0.8;
+        }
+
+        .station-label:nth-child(7) { top: 12%; }
+        .station-label:nth-child(8) { top: 32%; }
+        .station-label:nth-child(9) { top: 57%; }
+        .station-label:nth-child(10) { top: 82%; }
+
+        /* Stats Section */
+        .stats {
+            padding: 4rem 5%;
+            background: rgba(0, 0, 0, 0.3);
+            border-top: 1px solid rgba(0, 212, 170, 0.1);
+            border-bottom: 1px solid rgba(0, 212, 170, 0.1);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1rem;
+        }
+
+        /* Features Section */
+        .features {
+            padding: 6rem 5%;
+            position: relative;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .section-header h2 {
+            font-size: 2.5rem;
+            color: var(--white);
+            margin-bottom: 1rem;
+        }
+
+        .section-header p {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1.125rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .feature-card {
+            background: rgba(30, 58, 95, 0.3);
+            border: 1px solid rgba(0, 212, 170, 0.2);
+            border-radius: 16px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            background: var(--gradient-2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+        }
+
+        .feature-card h3 {
+            color: var(--white);
+            font-size: 1.25rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .feature-card p {
+            color: rgba(255, 255, 255, 0.6);
+            line-height: 1.6;
+        }
+
+        /* How It Works */
+        .how-it-works {
+            padding: 6rem 5%;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .steps {
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            flex-wrap: wrap;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .step {
+            text-align: center;
+            max-width: 300px;
+        }
+
+        .step-number {
+            width: 80px;
+            height: 80px;
+            background: var(--gradient-1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--white);
+            margin: 0 auto 1.5rem;
+            position: relative;
+        }
+
+        .step-number::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 2px solid var(--accent);
+            border-radius: 50%;
+            animation: step-pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes step-pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0; }
+        }
+
+        .step h3 {
+            color: var(--white);
+            font-size: 1.25rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .step p {
+            color: rgba(255, 255, 255, 0.6);
+            line-height: 1.6;
+        }
+
+        /* Demo Section */
+        .demo {
+            padding: 6rem 5%;
+        }
+
+        .demo-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(30, 58, 95, 0.4);
+            border: 1px solid rgba(0, 212, 170, 0.2);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
+        }
+
+        .demo-header {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .demo-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .demo-dot:nth-child(1) { background: #ff5f57; }
+        .demo-dot:nth-child(2) { background: #ffbd2e; }
+        .demo-dot:nth-child(3) { background: #28c840; }
+
+        .demo-title {
+            margin-left: 1rem;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.875rem;
+        }
+
+        .demo-chat {
+            padding: 2rem;
+            min-height: 400px;
+        }
+
+        .chat-message {
+            margin-bottom: 1.5rem;
+            animation: fadeInUp 0.5s ease;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .chat-user {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .chat-user .message-bubble {
+            background: var(--accent);
+            color: var(--primary);
+            max-width: 70%;
+            padding: 1rem 1.5rem;
+            border-radius: 18px 18px 4px 18px;
+            font-weight: 500;
+        }
+
+        .chat-ai {
+            display: flex;
+            justify-content: flex-start;
+        }
+
+        .chat-ai .message-bubble {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--white);
+            max-width: 80%;
+            padding: 1rem 1.5rem;
+            border-radius: 18px 18px 18px 4px;
+            border: 1px solid rgba(0, 212, 170, 0.2);
+            line-height: 1.6;
+        }
+
+        .chat-input {
+            display: flex;
+            gap: 1rem;
+            padding: 1.5rem 2rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-top: 1px solid rgba(0, 212, 170, 0.1);
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 1rem 1.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            color: var(--white);
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .chat-input input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .chat-input input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 20px rgba(0, 212, 170, 0.2);
+        }
+
+        .chat-input button {
+            padding: 1rem 2rem;
+            background: var(--accent);
+            color: var(--primary);
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .chat-input button:hover {
+            background: var(--accent-dark);
+        }
+
+        /* CTA Section */
+        .cta {
+            padding: 6rem 5%;
+            text-align: center;
+            background: linear-gradient(135deg, rgba(0, 212, 170, 0.1) 0%, rgba(30, 58, 95, 0.3) 100%);
+        }
+
+        .cta h2 {
+            font-size: 2.5rem;
+            color: var(--white);
+            margin-bottom: 1rem;
+        }
+
+        .cta p {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1.125rem;
+            margin-bottom: 2rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .cta-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        /* Footer */
+        footer {
+            padding: 4rem 5% 2rem;
+            background: rgba(0, 0, 0, 0.5);
+            border-top: 1px solid rgba(0, 212, 170, 0.1);
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 3rem;
+            max-width: 1200px;
+            margin: 0 auto 3rem;
+        }
+
+        .footer-brand .logo {
+            margin-bottom: 1rem;
+        }
+
+        .footer-brand p {
+            color: rgba(255, 255, 255, 0.6);
+            line-height: 1.6;
+        }
+
+        .footer-links h4 {
+            color: var(--white);
+            margin-bottom: 1rem;
+            font-size: 1rem;
+        }
+
+        .footer-links ul {
+            list-style: none;
+        }
+
+        .footer-links li {
+            margin-bottom: 0.5rem;
+        }
+
+        .footer-links a {
+            color: rgba(255, 255, 255, 0.6);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: var(--accent);
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.875rem;
+        }
+
+        .footer-bottom a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero-visual {
+                display: none;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .steps {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="bg-animation">
+        <div class="floating-shapes">
+            <div class="shape"></div>
+            <div class="shape"></div>
+            <div class="shape"></div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav>
+        <div class="logo">
+            <div class="logo-icon">⚖️</div>
+            <span>KadiRail AI</span>
+        </div>
+        <ul class="nav-links">
+            <li><a href="#features">ฟีเจอร์</a></li>
+            <li><a href="#how-it-works">วิธีใช้</a></li>
+            <li><a href="#demo">ทดลองใช้</a></li>
+            <li><a href="#cta">ติดต่อเรา</a></li>
+        </ul>
+        <a href="#demo" class="nav-cta">ทดลองฟรี</a>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <div class="hero-badge">
+                <i class="fas fa-rocket"></i>
+                Responsible AI Hackathon 2026
+            </div>
+            <h1>เครื่องมือนำทางคดี<br><span>สำหรับประเทศไทย</span></h1>
+            <p>ลดเวลาทำความเข้าใจคดีจาก <strong>120 นาที</strong> เหลือเพียง <strong>5 นาที</strong> ด้วย AI ที่ออกแบบมาเพื่อให้ความยุติธรรมเข้าถึงทุกคน</p>
+            <div class="hero-buttons">
+                <a href="#demo" class="btn-primary">
+                    <i class="fas fa-play"></i>
+                    ทดลองใช้ฟรี
+                </a>
+                <a href="#features" class="btn-secondary">
+                    <i class="fas fa-info-circle"></i>
+                    เรียนรู้เพิ่มเติม
+                </a>
+            </div>
+        </div>
+        <div class="hero-visual">
+            <div class="rail-map">
+                <div class="rail-line"></div>
+                <div class="rail-station">A</div>
+                <div class="rail-station">B</div>
+                <div class="rail-station">C</div>
+                <div class="rail-station">D</div>
+                <div class="rail-station">E</div>
+                <span class="station-label">สรุปคดี</span>
+                <span class="station-label">วิเคราะห์</span>
+                <span class="station-label">ค้นหากฎหมาย</span>
+                <span class="station-label">ประเมินผล</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="stats">
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-number">847</div>
+                <div class="stat-label">วันเฉลี่ยในการพิจารณาคดี</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">70%</div>
+                <div class="stat-label">คนไม่มีเงินเข้าถึงกฎหมาย</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">200K</div>
+                <div class="stat-label">บาท รางวัลชนะเลิศ</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">100%</div>
+                <div class="stat-label"> Responsible AI</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <div class="section-header">
+            <h2>ฟีเจอร์ที่โดดเด่น</h2>
+            <p>เครื่องมือ AI ที่ออกแบบมาเพื่อช่วยให้การเข้าถึงกฎหมายเป็นเรื่องง่าย</p>
+        </div>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-map"></i>
+                </div>
+                <h3>KadiRail Map</h3>
+                <p>แผนที่นำทางคดีแบบแยกส่วน ช่วยให้เข้าใจกระบวนการทางกฎหมายได้ง่ายขึ้น</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-question-circle"></i>
+                </div>
+                <h3>What-If Simulator</h3>
+                <p>จำลองสถานการณ์ต่างๆ เพื่อดูผลลัพธ์ที่เป็นไปได้ของคดี</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <h3>Justice Forecast</h3>
+                <p>ทำนายแนวโน้มคำพิพากษาจากข้อมูลคดีในอดีต</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-qrcode"></i>
+                </div>
+                <h3>Smart Scanner</h3>
+                <p>สแกนและวิเคราะห์เอกสารคดีอัตโนมัติด้วย AI</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-heart"></i>
+                </div>
+                <h3>Trauma-Informed AI</h3>
+                <p>AI ที่เข้าใจความเจ็บปวดของผู้เสียหาย ให้ข้อมูลอย่างรอบคอบ</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-balance-scale"></i>
+                </div>
+                <h3>Bias Correction</h3>
+                <p>ตรวจสอบและแก้ไขอคติในการตัดสินใจทางกฎหมาย</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="how-it-works" id="how-it-works">
+        <div class="section-header">
+            <h2>วิธีใช้งาน</h2>
+            <p>เริ่มใช้งานได้ง่ายใน 3 ขั้นตอน</p>
+        </div>
+        <div class="steps">
+            <div class="step">
+                <div class="step-number">1</div>
+                <h3>อัปโหลดเอกสาร</h3>
+                <p>อัปโหลดคำฟ้อง คำให้การ หรือเอกสารคดีของคุณ</p>
+            </div>
+            <div class="step">
+                <div class="step-number">2</div>
+                <h3>AI วิเคราะห์</h3>
+                <p>ระบบ AI จะวิเคราะห์และสรุปประเด็นสำคัญให้อัตโนมัติ</p>
+            </div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <h3>รับข้อมูลเชิงลึก</h3>
+                <p>ได้รับการวิเคราะห์ คำแนะนำ และแนวทางที่เข้าใจง่าย</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Demo Section -->
+    <section class="demo" id="demo">
+        <div class="section-header">
+            <h2>ทดลองใช้งาน</h2>
+            <p>สัมผัสประสบการณ์ KadiRail AI ด้วยตัวเอง</p>
+        </div>
+        <div class="demo-container">
+            <div class="demo-header">
+                <div class="demo-dot"></div>
+                <div class="demo-dot"></div>
+                <div class="demo-dot"></div>
+                <span class="demo-title">KadiRail AI Assistant</span>
+            </div>
+            <div class="demo-chat">
+                <div class="chat-message chat-ai">
+                    <div class="message-bubble">
+                        สวัสดีค่ะ! ฉันคือ KadiRail AI ผู้ช่วยด้านกฎหมาย<br><br>
+                        ฉันพร้อมช่วยวิเคราะห์คดี ตอบคำถาม และให้ข้อมูลที่เป็นประโยชน์แก่คุณค่ะ
+                    </div>
+                </div>
+                <div class="chat-message chat-user">
+                    <div class="message-bubble">
+                        อยากทราบว่าคดีผู้เสียหายจากอุบัติเหตุจราจรมีกระบวนการอย่างไร?
+                    </div>
+                </div>
+                <div class="chat-message chat-ai">
+                    <div class="message-bubble">
+                        ค่ะ! จากข้อมูลที่คุณสอบถาม กระบวนการคดีอุบัติเหตุจราจรมีดังนี้:<br><br>
+                        1️⃣ <strong>ยื่นฟ้อง</strong> - ภายใน 1 ปีหลังเกิดเหตุ<br>
+                        2️⃣ <strong>ไกล่เกลี่ย</strong> - ศาลนัดไกล่เกลี่ยก่อน<br>
+                        3️⃣ <strong>สืบพยาน</strong> - ไต่สวนมูลฟ้องและพยานหลักฐาน<br>
+                        4️⃣ <strong>พิพากษา</strong> - ศาลมีคำพิพากษา<br><br>
+                        หากต้องการให้วิเคราะห์เชิงลึกเพิ่มเติม สามารถอัปโหลดเอกสารคดีได้เลยค่ะ 📄
+                    </div>
+                </div>
+            </div>
+            <div class="chat-input">
+                <input type="text" placeholder="พิมพ์คำถามของคุณ...">
+                <button>ส่ง</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta" id="cta">
+        <h2>พร้อมเริ่มต้นแล้วหรือยัง?</h2>
+        <p>เข้าร่วมกับเราเพื่อทำให้ความยุติธรรมเข้าถึงทุกคน ลดเวลาการทำความเข้าใจคดีจาก 120 นาที เหลือเพียง 5 นาที</p>
+        <div class="cta-buttons">
+            <a href="https://github.com" class="btn-primary">
+                <i class="fab fa-github"></i>
+                GitHub
+            </a>
+            <a href="#" class="btn-secondary">
+                <i class="fas fa-envelope"></i>
+                ติดต่อเรา
+            </a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-brand">
+                <div class="logo">
+                    <div class="logo-icon">⚖️</div>
+                    <span>KadiRail AI</span>
+                </div>
+                <p>เครื่องมือนำทางคดีด้วย AI สำหรับประเทศไทย</p>
+            </div>
+            <div class="footer-links">
+                <h4>ลิงก์</h4>
+                <ul>
+                    <li><a href="#features">ฟีเจอร์</a></li>
+                    <li><a href="#how-it-works">วิธีใช้</a></li>
+                    <li><a href="#demo">ทดลองใช้</a></li>
+                </ul>
+            </div>
+            <div class="footer-links">
+                <h4>ทรัพยากร</h4>
+                <ul>
+                    <li><a href="#">เอกสาร</a></li>
+                    <li><a href="#">API</a></li>
+                    <li><a href="#">สนับสนุน</a></li>
+                </ul>
+            </div>
+            <div class="footer-links">
+                <h4>ติดต่อ</h4>
+                <ul>
+                    <li><a href="#">GitHub</a></li>
+                    <li><a href="#">Twitter</a></li>
+                    <li><a href="#">Email</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2026 KadiRail AI. Built with ❤️ for Responsible AI Hackathon 2026</p>
+        </div>
+    </footer>
+
+    <script>
+        // Smooth scrolling
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Navbar background on scroll
+        window.addEventListener('scroll', () => {
+            const nav = document.querySelector('nav');
+            if (window.scrollY > 50) {
+                nav.style.background = 'rgba(15, 23, 42, 0.95)';
+            } else {
+                nav.style.background = 'rgba(15, 23, 42, 0.8)';
+            }
+        });
+
+        // Chat input handler
+        const chatInput = document.querySelector('.chat-input input');
+        const chatButton = document.querySelector('.chat-input button');
+
+        function sendMessage() {
+            const message = chatInput.value.trim();
+            if (message) {
+                const chatContainer = document.querySelector('.demo-chat');
+                
+                // Add user message
+                const userMessage = document.createElement('div');
+                userMessage.className = 'chat-message chat-user';
+                userMessage.innerHTML = `<div class="message-bubble">${message}</div>`;
+                chatContainer.appendChild(userMessage);
+
+                // Clear input
+                chatInput.value = '';
+
+                // Simulate AI response
+                setTimeout(() => {
+                    const aiMessage = document.createElement('div');
+                    aiMessage.className = 'chat-message chat-ai';
+                    aiMessage.innerHTML = `<div class="message-bubble">ขอบคุณที่สอบถามค่ะ! ฉันกำลังวิเคราะห์คำถามของคุณ... สำหรับคำถามนี้ ข้าพเจ้าแนะนำให้ปรึกษาทนายความเพื่อรับคำแนะนำที่ถูกต้องตามกฎหมายค่ะ 🤖</div>`;
+                    chatContainer.appendChild(aiMessage);
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                }, 1000);
+
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+        }
+
+        chatButton.addEventListener('click', sendMessage);
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Intersection Observer for animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.feature-card, .step, .stat-item').forEach(el => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(30px)';
+            el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+            observer.observe(el);
+        });
+    </script>
+</body>
+</html>
