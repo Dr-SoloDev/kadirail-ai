@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kadirail-ai"
+version = "1.0.0"
+description = "Legal Case Navigation Tool for Thailand"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "streamlit>=1.28.0",
+    "requests>=2.31.0",
+    "pandas>=2.0.0",
+    "pythainlp>=4.0.0",
+    "python-dateutil>=2.8.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "ruff>=0.1.0",
+    "bandit>=1.7.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*", "core*", "utils*", "data*"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "C4", "SIM"]
+ignore = [
+    "W293",  # Blank line contains whitespace
+    "W291",  # Trailing whitespace  
+    "C401",  # Unnecessary generator (rewrite as list comp)
+    "B007",  # Loop control variable not used
+    "F841",  # Local variable is assigned but never used
+]
