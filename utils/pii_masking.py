@@ -159,7 +159,7 @@ def mask_tax_id(text: str) -> Tuple[str, List[PIIEntity]]:
         return masked
 
     masked_text = re.sub(TAX_ID_PATTERN, replace, text)
-    return masked_text, mask_tax_id(text.replace("-", ""))[0], entities
+    return masked_text, entities
 
 
 def mask_bank_account(text: str) -> Tuple[str, List[PIIEntity]]:

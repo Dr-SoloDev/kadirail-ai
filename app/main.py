@@ -29,6 +29,7 @@ from utils.case_law_search import search_case_laws, get_case_summary
 from utils.document_summarizer import summarize_document, generate_report
 
 # Apply theme
+# Note: unsafe_allow_html disabled for security
 st.markdown(
     """
 <style>
@@ -66,7 +67,7 @@ st.markdown(
     }
 </style>
 """,
-    unsafe_allow_html=True,
+    unsafe_allow_html=False,
 )
 
 
@@ -374,11 +375,20 @@ def document_validation_page():
     text = ""
     if input_method == "📝 ใส่ข้อความ":
         text = st.text_area(
-            "ใส่เนื้อหาเอกสาร", height=200, placeholder="วางเนื้อหาจาก OCR หรือเอกสาร..."
+            "ใส่เนื้อหาเอกสาร",
+            height=200,
+            placeholder="วางเนื้อหาจาก OCR หรือเอกสาร...",
+            max_chars=50000,  # Security: Limit input size
         )
     else:
-        uploaded_file = st.file_uploader("อัพโหลดเอกสาร", type=["txt", "pdf", "docx"])
+        uploaded_file = st.file_uploader(
+            "อัพโหลดเอกสาร", type=["txt", "pdf", "docx"], help="ไฟล์สูงสุด 10MB"
+        )
         if uploaded_file:
+            # Security: Limit file size to 10MB
+            if uploaded_file.size > 10 * 1024 * 1024:
+                st.error("❌ ไฟล์ใหญ่เกินไป (สูงสุด 10MB)")
+                return
             text = uploaded_file.read().decode("utf-8", errors="ignore")
 
     # Auto detect or select case type
