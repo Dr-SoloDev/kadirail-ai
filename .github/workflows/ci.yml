@@ -64,7 +64,7 @@ jobs:
 
       - name: Verify imports
         run: |
-          python -c "
+          python -c '
             from core.map_engine import MapEngine
             from core.scanner import scan_document_ui
             from core.simulator import WhatIfSimulator
@@ -74,5 +74,5 @@ jobs:
             from utils.case_law_search import search_case_laws
             from utils.document_summarizer import summarize_document
             from utils.auth import get_auth_manager
-            print('✅ All imports successful')
-          "
+            print("All imports successful")
+          '
