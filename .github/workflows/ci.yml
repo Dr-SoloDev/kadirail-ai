@@ -64,15 +64,4 @@ jobs:
 
       - name: Verify imports
         run: |
-          python -c '
-            from core.map_engine import MapEngine
-            from core.scanner import scan_document_ui
-            from core.simulator import WhatIfSimulator
-            from core.bias_engine import BiasEngine
-            from core.document_validator import validate_document
-            from utils.pii_masking import mask_pii
-            from utils.case_law_search import search_case_laws
-            from utils.document_summarizer import summarize_document
-            from utils.auth import get_auth_manager
-            print("All imports successful")
-          '
+          python -c "from core.map_engine import MapEngine; from core.scanner import scan_document_ui; from core.simulator import WhatIfSimulator; from core.bias_engine import BiasEngine; from core.document_validator import validate_document; from utils.pii_masking import mask_pii; from utils.case_law_search import search_case_laws; from utils.document_summarizer import summarize_document; from utils.auth import get_auth_manager; print('All imports successful')"
