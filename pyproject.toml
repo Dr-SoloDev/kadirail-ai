@@ -39,9 +39,13 @@ dev = [
     "bandit>=1.7.0",
 ]
 
+[tool.setuptools]
+packages = ["app", "core", "utils", "data"]
+
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["app*", "core*", "utils*", "data*"]
+include = ["app", "core", "utils", "data"]
+exclude = ["tests*"]
 
 [tool.ruff]
 line-length = 100

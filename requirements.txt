@@ -1,6 +1,9 @@
 # KadiRail AI - Requirements
 # Legal Case Navigation Tool for Thailand
 
+# Install local package in editable mode
+-e .
+
 # Core
 streamlit>=1.28.0
 
