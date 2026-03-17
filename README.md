@@ -100,8 +100,7 @@ huggingface-cli space create Dr-SoloDev/kadirail-ai \
 
 ### 📺 Live Demo Link
 
-<!-- แทนที่ด้วย URL จริงหลัง deploy -->
-[![Hugging Face Spaces](https://img.shields.io/badge/%F0%9F%8F%97%20Hugging%20Face-KadiRail%20AI-blue)](https://huggingface.co/spaces/Dr-SoloDev/kadirail-ai)
+[![Hugging Face Spaces](https://img.shields.io/badge/%F0%9F%8F%97%20Hugging%20Face-KadiRail%20AI-blue)](https://kadirail-kadirail-ai.hf.space)
 
 ### GIF แสดงการใช้งานหลัก (ตัวอย่าง placeholder – แทนด้วย GIF จริงของคุณ)
 
