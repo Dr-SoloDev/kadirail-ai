@@ -16,6 +16,7 @@ ignore = [
     "W293",  # blank line contains whitespace (in string literals)
     "C401",   # unnecessary generator
     "B007",   # unused loop variable
+    "F841",   # local variable assigned but never used
 ]
 
 [lint.per-file-ignores]
