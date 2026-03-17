@@ -8,6 +8,9 @@ Transforms complex legal procedures into interactive "train station" maps.
 import streamlit as st
 from datetime import datetime
 
+# Import auth module
+from utils.auth import get_auth_manager, require_auth
+
 # Page config
 st.set_page_config(
     page_title="KadiRail AI - รถไฟคดีของคุณ",
@@ -73,6 +76,15 @@ st.markdown(
 
 def init_session_state():
     """Initialize Streamlit session state."""
+    if "logged_in" not in st.session_state:
+        st.session_state.logged_in = False
+
+    if "session" not in st.session_state:
+        st.session_state.session = None
+
+    if "auth_token" not in st.session_state:
+        st.session_state.auth_token = None
+
     if "map_engine" not in st.session_state:
         st.session_state.map_engine = MapEngine()
 
@@ -86,10 +98,97 @@ def init_session_state():
         st.session_state.bias_engine = BiasEngine()
 
 
+def login_page():
+    """Login page."""
+    st.set_page_config(
+        page_title="เข้าสู่ระบบ - KadiRail AI",
+        page_icon="🚂",
+        layout="centered",
+    )
+
+    st.markdown(
+        """
+    <style>
+    .login-container {
+        max-width: 400px;
+        margin: 0 auto;
+        padding: 2rem;
+        background: white;
+        border-radius: 1rem;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    </style>
+    """,
+        unsafe_allow_html=True,
+    )
+
+    st.title("🚂 เข้าสู่ระบบ")
+    st.markdown("**KadiRail AI - รถไฟคดีของคุณ**")
+
+    st.markdown("---")
+
+    with st.form("login_form"):
+        username = st.text_input("👤 ชื่อผู้ใช้")
+        password = st.text_input("🔑 รหัสผ่าน", type="password")
+
+        submitted = st.form_submit_button(
+            "🚀 เข้าสู่ระบบ", type="primary", use_container_width=True
+        )
+
+        if submitted:
+            if username and password:
+                auth = get_auth_manager()
+                result = auth.login(username, password)
+
+                if result:
+                    st.session_state.logged_in = True
+                    st.session_state.auth_token = result["token"]
+                    st.session_state.session = {
+                        "username": result["username"],
+                        "role": result["role"],
+                    }
+                    st.success(f"ยินดีต้อนรับ {result['username']}!")
+                    st.rerun()
+                else:
+                    st.error("ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง")
+            else:
+                st.warning("กรุณากรอกชื่อผู้ใช้และรหัสผ่าน")
+
+    st.markdown("---")
+    st.markdown("### 📋 บัญชีทดสอบ")
+    st.code("""
+admin / kadirail2026 (ผู้ดูแล)
+demo / demo1234 (ผู้ใช้ทั่วไป)
+reviewer / review2026 (ผู้ตรวจสอบ)
+    """)
+
+
 def sidebar_navigation():
     """Sidebar navigation menu."""
-    st.sidebar.title("🚂 KadiRail AI")
-    st.sidebar.markdown("**รถไฟคดีของคุณ**")
+    # Login/Logout section
+    if st.session_state.get("logged_in"):
+        user_info = st.session_state.get("session", {})
+        username = user_info.get("username", "Unknown")
+        role = user_info.get("role", "user")
+
+        st.sidebar.title("🚂 KadiRail AI")
+        st.sidebar.markdown(f"**👤 {username}**")
+        st.sidebar.markdown(f"📛 สิทธิ์: `{role}`")
+
+        if st.sidebar.button("🚪 ออกจากระบบ", use_container_width=True):
+            auth = get_auth_manager()
+            if st.session_state.get("auth_token"):
+                auth.logout(st.session_state.auth_token)
+            st.session_state.logged_in = False
+            st.session_state.auth_token = None
+            st.session_state.session = None
+            st.rerun()
+
+    else:
+        st.sidebar.title("🚂 KadiRail AI")
+        st.sidebar.info("กรุณาเข้าสู่ระบบ")
+        return None
+
     st.sidebar.markdown("---")
 
     menu = st.sidebar.radio(
@@ -607,6 +706,11 @@ def document_summarizer_page():
 def main():
     """Main application entry point."""
     init_session_state()
+
+    # Check if logged in
+    if not st.session_state.get("logged_in"):
+        login_page()
+        return
 
     menu = sidebar_navigation()
 
