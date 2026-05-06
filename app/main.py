@@ -1,736 +1,644 @@
 """
-KadiRail AI - Streamlit Main Application
-Legal Case Navigation Tool for Thailand
+KadiRail AI - Multi-Agent Legal Navigation System
+Streamlit Main Application
 
-Transforms complex legal procedures into interactive "train station" maps.
+Powered by AMD Instinct MI300X + ROCm + vLLM
+AMD Developer Hackathon 2026 — Track 1: AI Agents & Agentic Workflows
 """
 
-
+import os
 import streamlit as st
 
-from utils.auth import get_auth_manager
+# Load environment variables
+from dotenv import load_dotenv
+load_dotenv()
+
+from agents.orchestrator import OrchestratorAgent
+from services.llm_service import LLMConfig, LLMService, get_llm_service
 
 # Page config
 st.set_page_config(
-    page_title="KadiRail AI - รถไฟคดีของคุณ",
+    page_title="KadiRail AI - Multi-Agent Legal Navigator",
     page_icon="🚂",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# Import core modules
-from core.bias_engine import BiasEngine
-
-# Import new challenge modules
-from core.document_validator import validate_document
-from core.map_engine import MapEngine, interactive_map_view, render_map
-from core.scanner import scan_document_ui
-from core.simulator import WhatIfSimulator
-from utils.case_law_search import search_case_laws
-from utils.document_summarizer import generate_report, summarize_document
-from utils.pii_masking import mask_pii, pii_detection_summary
-
-# Apply theme
-# Note: unsafe_allow_html disabled for security
-st.markdown(
-    """
+# Theme
+st.markdown("""
 <style>
-    .main {
-        background-color: #f8fafc;
+    .main { background-color: #f8fafc; }
+    .stApp { background-color: #ffffff; }
+    .agent-card {
+        padding: 1rem; border-radius: 0.5rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white; margin-bottom: 0.5rem;
     }
-    .stApp {
-        background-color: #ffffff;
-    }
-    .step-card {
-        padding: 1rem;
-        border-radius: 0.5rem;
-        background-color: #f1f5f9;
-        margin-bottom: 0.5rem;
-    }
-    .current-step {
-        border-left: 4px solid #4F46E5;
-        background-color: #eef2ff;
-    }
-    .completed-step {
-        border-left: 4px solid #10B981;
-        background-color: #ecfdf5;
-    }
-    .risk-high {
-        color: #dc2626;
-        font-weight: bold;
-    }
-    .risk-medium {
-        color: #f59e0b;
-        font-weight: bold;
-    }
-    .risk-low {
-        color: #10b981;
-        font-weight: bold;
-    }
+    .agent-active { border-left: 4px solid #10B981; background-color: #ecfdf5; padding: 0.5rem; border-radius: 0.25rem; margin: 0.25rem 0; }
+    .agent-waiting { border-left: 4px solid #f59e0b; background-color: #fffbeb; padding: 0.5rem; border-radius: 0.25rem; margin: 0.25rem 0; }
+    .agent-done { border-left: 4px solid #6366f1; background-color: #eef2ff; padding: 0.5rem; border-radius: 0.25rem; margin: 0.25rem 0; }
+    .risk-high { color: #dc2626; font-weight: bold; }
+    .risk-medium { color: #f59e0b; font-weight: bold; }
+    .risk-low { color: #10b981; font-weight: bold; }
+    .metric-card { background: #f1f5f9; padding: 1rem; border-radius: 0.5rem; text-align: center; }
+    .step-card { padding: 1rem; border-radius: 0.5rem; background-color: #f1f5f9; margin-bottom: 0.5rem; }
 </style>
-""",
-    unsafe_allow_html=True,
-)
+""", unsafe_allow_html=True)
 
 
 def init_session_state():
-    """Initialize Streamlit session state."""
-    if "logged_in" not in st.session_state:
-        st.session_state.logged_in = False
-
-    if "session" not in st.session_state:
-        st.session_state.session = None
-
-    if "auth_token" not in st.session_state:
-        st.session_state.auth_token = None
-
-    if "map_engine" not in st.session_state:
-        st.session_state.map_engine = MapEngine()
-
-    if "current_map" not in st.session_state:
-        st.session_state.current_map = None
-
-    if "scan_result" not in st.session_state:
-        st.session_state.scan_result = None
-
-    if "bias_engine" not in st.session_state:
-        st.session_state.bias_engine = BiasEngine()
+    """Initialize session state."""
+    if "orchestrator" not in st.session_state:
+        st.session_state.orchestrator = OrchestratorAgent()
+    if "analysis_result" not in st.session_state:
+        st.session_state.analysis_result = None
+    if "llm_connected" not in st.session_state:
+        st.session_state.llm_connected = False
 
 
-def login_page():
-    """Login page."""
-    st.set_page_config(
-        page_title="เข้าสู่ระบบ - KadiRail AI",
-        page_icon="🚂",
-        layout="centered",
-    )
+def check_llm_connection():
+    """Check and display LLM connection status."""
+    llm = get_llm_service()
+    health = llm.health_check()
+    connected = health["status"] == "healthy"
+    st.session_state.llm_connected = connected
+    return health
 
-    st.markdown(
-        """
-    <style>
-    .login-container {
-        max-width: 400px;
-        margin: 0 auto;
-        padding: 2rem;
-        background: white;
-        border-radius: 1rem;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    }
-    </style>
-    """,
-        unsafe_allow_html=True,
-    )
 
-    st.title("🚂 เข้าสู่ระบบ")
-    st.markdown("**KadiRail AI - รถไฟคดีของคุณ**")
+def sidebar():
+    """Sidebar with navigation, LLM status, and agent info."""
+    st.sidebar.title("🚂 KadiRail AI")
+    st.sidebar.markdown("**Multi-Agent Legal Navigator**")
+    st.sidebar.markdown("*AMD Instinct MI300X + ROCm + vLLM*")
+    st.sidebar.markdown("---")
 
-    st.markdown("---")
-
-    with st.form("login_form"):
-        username = st.text_input("👤 ชื่อผู้ใช้")
-        password = st.text_input("🔑 รหัสผ่าน", type="password")
-
-        submitted = st.form_submit_button(
-            "🚀 เข้าสู่ระบบ", type="primary", use_container_width=True
-        )
-
-        if submitted:
-            if username and password:
-                auth = get_auth_manager()
-                result = auth.login(username, password)
-
-                if result:
-                    st.session_state.logged_in = True
-                    st.session_state.auth_token = result["token"]
-                    st.session_state.session = {
-                        "username": result["username"],
-                        "role": result["role"],
-                    }
-                    st.success(f"ยินดีต้อนรับ {result['username']}!")
-                    st.rerun()
-                else:
-                    st.error("ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง")
+    # LLM Connection Status
+    with st.sidebar.expander("⚡ LLM Status", expanded=False):
+        if st.button("Check Connection", use_container_width=True):
+            health = check_llm_connection()
+            if health["status"] == "healthy":
+                st.success(f"✅ Connected")
+                for m in health.get("models", []):
+                    st.code(m)
             else:
-                st.warning("กรุณากรอกชื่อผู้ใช้และรหัสผ่าน")
+                st.error(f"❌ {health.get('error', 'Disconnected')}")
 
-    st.markdown("---")
-    st.markdown("### 📋 บัญชีทดสอบ")
-    st.code("""
-admin / kadirail2026 (ผู้ดูแล)
-demo / demo1234 (ผู้ใช้ทั่วไป)
-reviewer / review2026 (ผู้ตรวจสอบ)
-    """)
-
-
-def sidebar_navigation():
-    """Sidebar navigation menu."""
-    # Login/Logout section
-    if st.session_state.get("logged_in"):
-        user_info = st.session_state.get("session", {})
-        username = user_info.get("username", "Unknown")
-        role = user_info.get("role", "user")
-
-        st.sidebar.title("🚂 KadiRail AI")
-        st.sidebar.markdown(f"**👤 {username}**")
-        st.sidebar.markdown(f"📛 สิทธิ์: `{role}`")
-
-        if st.sidebar.button("🚪 ออกจากระบบ", use_container_width=True):
-            auth = get_auth_manager()
-            if st.session_state.get("auth_token"):
-                auth.logout(st.session_state.auth_token)
-            st.session_state.logged_in = False
-            st.session_state.auth_token = None
-            st.session_state.session = None
+        # Quick config
+        base_url = st.text_input("vLLM URL", value=os.getenv("LLM_BASE_URL", "http://localhost:8000/v1"))
+        model = st.text_input("Model", value=os.getenv("LLM_MODEL", "Qwen/Qwen2-7B-Instruct"))
+        if st.button("Update Config", use_container_width=True):
+            config = LLMConfig(base_url=base_url, model=model)
+            new_llm = LLMService(config)
+            st.session_state.orchestrator = OrchestratorAgent(llm=new_llm)
+            st.success("✅ Config updated!")
             st.rerun()
-
-    else:
-        st.sidebar.title("🚂 KadiRail AI")
-        st.sidebar.info("กรุณาเข้าสู่ระบบ")
-        return None
 
     st.sidebar.markdown("---")
 
+    # Navigation
     menu = st.sidebar.radio(
-        "เมนู",
+        "Navigate",
         [
-            "🏠 หน้าหลัก",
-            "📄 สแกนเอกสาร",
-            "🗺️ แผนที่คดี",
-            "🔮 ทำนายผล",
-            "⚖️ ตรวจอคติ",
-            "✅ ตรวจเอกสาร",
-            "🔒 ปิดบังข้อมูลส่วนตัว",
-            "📚 ค้นหาคำพิพากษา",
-            "📝 สรุปเอกสาร",
+            "🏠 Home",
+            "🔍 Full Case Analysis",
+            "🗺️ Case Map",
+            "🔮 What-If Simulator",
+            "⚖️ Bias Audit",
+            "🔒 PII Masking",
+            "📚 Case Law Search",
+            "📝 Document Summary",
+            "📊 Agent Dashboard",
         ],
     )
 
     st.sidebar.markdown("---")
-    st.sidebar.markdown("**📊 สถานะคดี**")
-    if st.session_state.current_map:
-        map_obj = st.session_state.current_map
-        st.sidebar.metric(
-            "ขั้นตอนปัจจุบัน", f"{map_obj.current_step + 1}/{len(map_obj.steps)}"
-        )
-        st.sidebar.metric("ระยะเวลารวม", f"{map_obj.total_duration()} วัน")
+
+    # Agent status
+    st.sidebar.markdown("### 🤖 Agents")
+    orch = st.session_state.orchestrator
+    for agent in orch.agents:
+        tasks = len(agent.history)
+        icon = "🟢" if tasks > 0 else "⚪"
+        st.sidebar.markdown(f"{icon} **{agent.name}** ({tasks} tasks)")
 
     st.sidebar.markdown("---")
     st.sidebar.markdown("""
-    **💡 เกี่ยวกับ KadiRail AI**
+    **🏆 AMD Developer Hackathon 2026**
+    Track 1: AI Agents & Agentic Workflows
     
-    เครื่องมือนำทางคดีแรงงานสำหรับประเทศไทย
-    - ลดเวลาทำความเข้าใจจาก 120 นาที → 5 นาที
-    - (-96%)
+    **NovaPulse Team**
     """)
 
     return menu
 
 
 def home_page():
-    """Main landing page."""
+    """Landing page."""
     st.title("🚂 KadiRail AI")
-    st.markdown("### รถไฟคดีของคุณ")
-    st.markdown("*เปลี่ยนทางเดินทางทางกฎหมายให้เป็นแผนที่ในมือคุณ*")
-
+    st.markdown("### Multi-Agent Legal Navigation System for Thailand")
+    st.markdown("*Transform complex legal cases into clear, actionable maps — powered by AI agents on AMD GPUs*")
     st.markdown("---")
 
-    # Hero section
     col1, col2 = st.columns([2, 1])
 
     with col1:
         st.markdown("""
-        ## 🔍 สิ่งที่ KadiRail AI ช่วยคุณได้
+        ## How It Works
         
-        - **📄 สแกนเอกสาร** - อัพโหลดเอกสารคดี ใช้ LINE OCR สแกนอัตโนมัติ
-        - **🗺️ แผนที่คดี** - แปลงขั้นตอนทางกฎหมายเป็นแผนที่เหมือนรถไฟ
-        - **🔮 ทำนายผล** - จำลองผลลัพธ์ของแต่ละทางเลือก
-        - **⚖️ ตรวจอคติ** - ตรวจสอบและแก้ไขอคติในระบบ
+        KadiRail AI uses **5 specialized AI agents** running on **AMD Instinct MI300X** GPUs
+        to analyze Thai legal cases end-to-end:
         
-        ---
+        | Agent | Role |
+        |-------|------|
+        | 🔍 **LegalAnalysisAgent** | Document analysis, case classification, entity extraction |
+        | 🗺️ **CaseStrategyAgent** | What-If simulation, timeline & cost estimation |
+        | ⚖️ **BiasAuditAgent** | Bias detection, PII masking, fairness scoring |
+        | 📚 **CaseLawAgent** | Case law search, summarization, report generation |
+        | 🎯 **OrchestratorAgent** | Coordinates all agents in optimal workflow |
         
-        ### 📌 คดีที่รองรับ (MVP)
-        
-        | ประเภท | รายละเอียด |
-        |---------|-----------|
-        | โกงค่าจ้าง | นายจ้างไม่จ่ายหรือจ่ายไม่ครบ |
-        | ถูกเลิกจ้าง | ถูกไล่ออกโดยไม่เป็นธรรม |
-        | ไม่จ่ายโบนัส | นายจ้างไม่จ่ายโบนัส |
+        ### Supported Case Types (Thai Labor Law)
+        - **โกงค่าจ้าง** — Wage theft / unpaid wages
+        - **เลิกจ้างไม่เป็นธรรม** — Unfair termination
+        - **ไม่จ่ายโบนัส** — Bonus disputes
         """)
 
     with col2:
-        st.markdown("### 🎯 เริ่มต้นใช้งาน")
+        st.markdown("### 🚀 Quick Start")
+        st.info("Upload or paste a legal document to get started. The AI agents will analyze it automatically.")
 
-        case_type = st.selectbox(
-            "เลือกประเภทคดี",
-            ["โกงค่าจ้าง", "ถูกเลิกจ้าง", "ไม่จ่ายโบนัส"],
-            format_func=lambda x: f"⚖️ {x}",
-        )
+        st.markdown("### 📊 Impact")
+        st.metric("Case Understanding Time", "120 min → 5 min", delta="-96%", delta_color="normal")
 
-        case_map = {"โกงค่าจ้าง": "wage", "ถูกเลิกจ้าง": "termination", "ไม่จ่ายโบนัส": "bonus"}
-
-        if st.button("🚀 สร้างแผนที่คดี", type="primary", use_container_width=True):
-            map_engine = st.session_state.map_engine
-            new_map = map_engine.create_map(case_type=case_map[case_type])
-            st.session_state.current_map = new_map
-            st.success("✅ สร้างแผนที่คดีสำเร็จ!")
-            st.rerun()
-
-        st.markdown("---")
-        st.markdown("### 📊 Impact Target")
-        st.metric(
-            "ลดเวลาเข้าใจคดี", "120 นาที → 5 นาที", delta="-96%", delta_color="normal"
-        )
+        st.markdown("### ⚡ Tech Stack")
+        st.markdown("""
+        - **GPU:** AMD Instinct MI300X (192GB)
+        - **Runtime:** ROCm + vLLM
+        - **LLM:** Open-source (Qwen/Llama)
+        - **Framework:** Python + Streamlit
+        - **Agents:** Custom multi-agent system
+        """)
 
 
-def scan_page():
-    """Document scanning page."""
-    st.title("📄 สแกนเอกสาร")
-    st.markdown("อัพโหลดเอกสารคดีเพื่อวิเคราะห์อัตโนมัติ")
+def full_analysis_page():
+    """Full case analysis — runs all agents."""
+    st.title("🔍 Full Case Analysis")
+    st.markdown("Upload or paste a legal document. All 5 agents will analyze it together.")
 
-    result = scan_document_ui()
-
-    if result["scan_result"]:
-        st.success("✅ สแกนเสร็จสิ้น!")
-
-        col1, col2 = st.columns(2)
-
-        with col1:
-            st.markdown("### 📋 ผลการสแกน")
-            scan = result["scan_result"]
-            st.text_area("ข้อความที่อ่านได้", scan.get("text", ""), height=150)
-            st.metric("ความมั่นใจ", f"{scan.get('confidence', 0) * 100:.1f}%")
-
-        with col2:
-            st.markdown("### 🎯 ข้อมูลคดี")
-            case_info = result.get("case_info", {})
-
-            risk = result.get("risk_level", "unknown")
-            risk_emoji = {"high": "🔴", "medium": "🟡", "low": "🟢", "unknown": "⚪"}
-            st.markdown(f"**ระดับความเสี่ยง:** {risk_emoji.get(risk, '')} {risk}")
-
-            if case_info.get("case_types"):
-                st.markdown("**ประเภทคดีที่พบ:**")
-                for ct in case_info["case_types"]:
-                    st.markdown(f"- {ct}")
-
-            if case_info.get("word_count"):
-                st.metric("จำนวนคำ", case_info["word_count"])
-
-
-def map_page():
-    """Legal case map page."""
-    st.title("🗺️ แผนที่คดี")
-
-    map_obj = st.session_state.current_map
-
-    if not map_obj:
-        st.warning("ยังไม่มีแผนที่คดี กรุณาสร้างแผนที่ใหม่ที่หน้าหลัก")
-        return
-
-    # View mode selector
-    view_mode = st.radio(
-        "เลือกโหมดการแสดงผล",
-        ["🗺️ แผนที่ (Mermaid)", "📋 รายการ", "🔄 แบบโต้ตอบ"],
-        horizontal=True,
+    text = st.text_area(
+        "Paste legal document text (Thai or English)",
+        height=250,
+        placeholder="วางเอกสารคดีที่นี่... / Paste your legal document here...",
     )
 
-    if view_mode == "🗺️ แผนที่ (Mermaid)":
-        render_map(map_obj)
-    elif view_mode == "📋 รายการ":
-        from core.map_engine import render_map_simple
+    if text and st.button("🚀 Run Full Analysis", type="primary", use_container_width=True):
+        orch = st.session_state.orchestrator
 
-        render_map_simple(map_obj)
-    else:
-        interactive_map_view(map_obj)
+        # Show agent pipeline progress
+        progress = st.empty()
+        status_container = st.container()
+
+        with status_container:
+            st.markdown("### 🤖 Agent Pipeline")
+            agent_cols = st.columns(4)
+            placeholders = {}
+            agent_names = [
+                ("🔍", "LegalAnalysis"),
+                ("🗺️", "CaseStrategy"),
+                ("📚", "CaseLaw"),
+                ("⚖️", "BiasAudit"),
+            ]
+            for i, (icon, name) in enumerate(agent_names):
+                with agent_cols[i]:
+                    placeholders[name] = st.empty()
+                    placeholders[name].markdown(f"""<div class="agent-waiting">{icon} <b>{name}</b><br/>⏳ Waiting</div>""", unsafe_allow_html=True)
+
+        with st.spinner("Running multi-agent analysis pipeline..."):
+            # Update progress as agents run
+            placeholders["LegalAnalysis"].markdown("""<div class="agent-active">🔍 <b>LegalAnalysis</b><br/>🔄 Analyzing...</div>""", unsafe_allow_html=True)
+
+            result = orch.analyze_case(text)
+
+            # Mark all as done
+            for name in ["LegalAnalysis", "CaseStrategy", "CaseLaw", "BiasAudit"]:
+                icon = {"LegalAnalysis": "🔍", "CaseStrategy": "🗺️", "CaseLaw": "📚", "BiasAudit": "⚖️"}[name]
+                placeholders[name].markdown(f"""<div class="agent-done">{icon} <b>{name}</b><br/>✅ Complete</div>""", unsafe_allow_html=True)
+
+        st.session_state.analysis_result = result
+
+        # Display results
+        st.markdown("---")
+        st.markdown("### 📊 Results")
+
+        # Summary metrics
+        col1, col2, col3, col4 = st.columns(4)
+        analysis_data = result.get("results", {}).get("analysis", {}).get("data", {})
+        strategy_data = result.get("results", {}).get("strategy", {}).get("data", {})
+        bias_data = result.get("results", {}).get("bias", {}).get("data", {})
+
+        with col1:
+            case_type = analysis_data.get("case_type_thai", analysis_data.get("case_type", "Unknown"))
+            st.metric("Case Type", case_type)
+        with col2:
+            risk = analysis_data.get("risk_level", "unknown")
+            risk_emoji = {"high": "🔴", "medium": "🟡", "low": "🟢"}.get(risk, "⚪")
+            st.metric("Risk Level", f"{risk_emoji} {risk.upper()}")
+        with col3:
+            win_rate = strategy_data.get("win_rate", "N/A")
+            st.metric("Win Probability", f"{win_rate}%")
+        with col4:
+            bias_score = bias_data.get("bias_score", 0)
+            st.metric("Bias Score", f"{bias_score:.1f}%")
+
+        # Tabs for detailed results
+        tab1, tab2, tab3, tab4, tab5 = st.tabs(["📋 Analysis", "🗺️ Strategy", "📚 Case Law", "⚖️ Bias", "📊 Pipeline"])
+
+        with tab1:
+            st.markdown(f"**Summary:** {analysis_data.get('summary', 'N/A')}")
+            if analysis_data.get("key_facts"):
+                st.markdown("**Key Facts:**")
+                for fact in analysis_data["key_facts"]:
+                    st.markdown(f"- {fact}")
+            if analysis_data.get("applicable_laws"):
+                st.markdown("**Applicable Laws:**")
+                for law in analysis_data["applicable_laws"]:
+                    st.markdown(f"- {law}")
+
+        with tab2:
+            if strategy_data.get("timeline"):
+                st.markdown("**Timeline:**")
+                for step in strategy_data["timeline"]:
+                    st.markdown(f"- **{step.get('step', '')}** ({step.get('duration_days', '?')} days): {step.get('description', '')}")
+            if strategy_data.get("recommendations"):
+                st.markdown("**Recommendations:**")
+                for rec in strategy_data["recommendations"]:
+                    st.markdown(f"- {rec}")
+
+        with tab3:
+            case_law_data = result.get("results", {}).get("case_law", {}).get("data", {})
+            cases = case_law_data.get("cases", [])
+            if cases:
+                for case in cases:
+                    with st.expander(f"📄 {case.get('case_number', 'N/A')}"):
+                        st.markdown(f"**Court:** {case.get('court', 'N/A')}")
+                        st.markdown(f"**Issue:** {case.get('issue', 'N/A')}")
+                        st.markdown(f"**Summary:** {case.get('summary', 'N/A')}")
+                        st.markdown(f"**Key Principle:** {case.get('key_principle', 'N/A')}")
+            else:
+                st.info("No case law results")
+
+        with tab4:
+            if bias_data.get("findings"):
+                for finding in bias_data["findings"]:
+                    sev = finding.get("severity", "low")
+                    emoji = {"high": "🔴", "medium": "🟡", "low": "🟢"}.get(sev, "⚪")
+                    with st.expander(f"{emoji} {finding.get('category', '')} ({sev})"):
+                        st.markdown(f"**Text:** {finding.get('text', '')}")
+                        st.markdown(f"**Explanation:** {finding.get('explanation', '')}")
+                        if finding.get("suggestion"):
+                            st.markdown(f"**Suggestion:** {finding['suggestion']}")
+            else:
+                st.success("✅ No significant bias detected")
+
+        with tab5:
+            st.markdown(f"**Total Execution Time:** {result.get('execution_time', 0):.2f}s")
+            st.markdown(f"**Agents Used:** {result.get('agent_count', 0)}")
+            if result.get("execution_log"):
+                st.markdown("**Execution Log:**")
+                for entry in result["execution_log"]:
+                    st.markdown(f"- `{entry['event']}`")
+
+
+def case_map_page():
+    """Case map — legal process visualization."""
+    st.title("🗺️ Case Map")
+    st.markdown("Visualize the legal process as a railway map")
+
+    case_type = st.selectbox("Case Type", ["wage_theft", "unfair_termination", "bonus_dispute"])
+    strategy = st.selectbox("Strategy", ["litigation", "mediation", "settlement"])
+
+    if st.button("🗺️ Generate Case Map", type="primary"):
+        orch = st.session_state.orchestrator
+        with st.spinner("Generating case map..."):
+            result = orch.case_strategy.run({
+                "action": "map",
+                "case_type": case_type,
+                "strategy": strategy,
+            })
+
+        data = result.data
+        if data.get("steps"):
+            st.markdown(f"### {case_type.replace('_', ' ').title()} — {strategy.title()} Path")
+            st.markdown(f"**Total Steps:** {data.get('total_steps', 'N/A')} | **Duration:** {data.get('total_duration_days', 'N/A')} days")
+
+            # Mermaid diagram
+            if data.get("mermaid_diagram"):
+                st.markdown("#### Process Flow")
+                mermaid = data["mermaid_diagram"]
+                st.code(mermaid, language="mermaid")
+
+            # Step details
+            st.markdown("#### Step Details")
+            for step in data["steps"]:
+                risk = step.get("risk_level", "low")
+                emoji = {"high": "🔴", "medium": "🟡", "low": "🟢"}.get(risk, "⚪")
+                with st.expander(f"🚉 Step {step.get('step_number', '?')}: {step.get('title', '')} {emoji}"):
+                    st.markdown(f"**Duration:** {step.get('duration_days', '?')} days")
+                    st.markdown(f"**Description:** {step.get('description', '')}")
+                    st.markdown(f"**Cost:** ฿{step.get('cost_thb', 0):,}")
+                    if step.get("required_documents"):
+                        st.markdown("**Required Documents:**")
+                        for doc in step["required_documents"]:
+                            st.markdown(f"- {doc}")
+                    if step.get("tips"):
+                        st.info(f"💡 {step['tips']}")
+        else:
+            st.warning("Could not generate case map. Check LLM connection.")
 
 
 def simulator_page():
-    """What-If Simulator page."""
-    st.title("🔮 ทำนายผลคดี")
-    st.markdown("จำลองผลลัพธ์ของทางเลือกต่างๆ")
+    """What-If Simulator."""
+    st.title("🔮 What-If Simulator")
+    st.markdown("Simulate different legal strategies and their outcomes")
 
-    if not st.session_state.current_map:
-        st.warning("กรุณาสร้างแผนที่คดีก่อน")
-        return
-
-    simulator = WhatIfSimulator(st.session_state.current_map)
-
-    # Get options from current step
-    current_step = st.session_state.current_map.get_current_step()
-
-    if not current_step:
-        st.info("ไม่มีข้อมูลขั้นตอนปัจจุบัน")
-        return
-
-    st.markdown(f"### ขั้นตอนปัจจุบัน: **{current_step.title}**")
-
-    if not current_step.alternatives:
-        st.info("ขั้นตอนนี้ไม่มีทางเลือกอื่น")
-        return
-
-    # Create options from alternatives
-    options = [{"name": alt} for alt in current_step.alternatives]
-    options.append({"name": "ดำเนินการตามปกติ"})
-
-    selected_option = st.selectbox(
-        "เลือกทางเลือกที่ต้องการจำลอง", options, format_func=lambda x: x["name"]
-    )
-
-    if st.button("🔮 จำลองผลลัพธ์"):
-        with st.spinner("กำลังจำลอง..."):
-            result = simulator.simulate(selected_option["name"])
-
-            col1, col2, col3 = st.columns(3)
-
-            with col1:
-                st.metric("โอกาสชนะ", f"{result['win_rate']}%")
-            with col2:
-                st.metric("ระยะเวลาโดยประมาณ", f"{result['estimated_time']} วัน")
-            with col3:
-                st.metric("ค่าใช้จ่ายโดยประมาณ", f"฿{result['estimated_cost']:,}")
-
-            if result.get("risks"):
-                st.markdown("### ⚠️ ความเสี่ยงที่อาจเกิดขึ้น")
-                for risk in result["risks"]:
-                    st.markdown(f"- {risk}")
-
-            if result.get("recommendations"):
-                st.markdown("### 💡 คำแนะนำ")
-                for rec in result["recommendations"]:
-                    st.markdown(f"- {rec}")
-
-
-def bias_check_page():
-    """Bias checking page."""
-    st.title("⚖️ ตรวจสอบอคติ")
-    st.markdown("ตรวจสอบและแก้ไขอคติในระบบ")
-
-    bias_engine = st.session_state.bias_engine
-
-    # Input text for analysis
-    input_text = st.text_area(
-        "ใส่ข้อความหรือคำพิพากษาที่ต้องการตรวจสอบ",
-        height=150,
-        placeholder="ใส่ข้อความภาษาไทยที่นี่...",
-    )
-
-    if input_text and st.button("🔍 ตรวจสอบอคติ"):
-        with st.spinner("กำลังวิเคราะห์..."):
-            result = bias_engine.analyze(input_text)
-
-            st.markdown("### 📊 ผลการวิเคราะห์")
-
-            # Bias score
-            col1, col2 = st.columns(2)
-            with col1:
-                score = result.get("bias_score", 0)
-                st.metric(
-                    "คะแนนอคติ",
-                    f"{score:.1f}%",
-                    delta="⚠️ มีอคติ" if score > 30 else "✅ ปกติ",
-                    delta_color="inverse" if score > 30 else "normal",
-                )
-            with col2:
-                categories = result.get("bias_categories", {})
-                if categories:
-                    top_category = max(categories.items(), key=lambda x: x[1])
-                    st.metric("หมวดหมู่อคติสูงสุด", top_category[0])
-
-            # Detailed findings
-            if result.get("findings"):
-                st.markdown("### 🔎 รายละเอียด")
-
-                for finding in result["findings"]:
-                    severity = finding.get("severity", "low")
-                    emoji = {"high": "🔴", "medium": "🟡", "low": "🟢"}.get(
-                        severity, "⚪"
-                    )
-
-                    with st.expander(f"{emoji} {finding['category']} ({severity})"):
-                        st.markdown(f"**ข้อความ:** {finding['text']}")
-                        st.markdown(f"**คำอธิบาย:** {finding['explanation']}")
-                        if finding.get("suggestion"):
-                            st.markdown(f"**💡 ข้อเสนอแนะ:** {finding['suggestion']}")
-
-            # Correction
-            if result.get("corrected_text"):
-                st.markdown("### ✨ ข้อความที่แก้ไขแล้ว")
-                st.text_area("ข้อความแก้ไข", result["corrected_text"], height=150)
-
-
-def document_validation_page():
-    """Document validation page (Challenge 2.2)."""
-    st.title("✅ ตรวจสอบเอกสาร")
-    st.markdown("ตรวจสอบความครบถ้วนของเอกสารคดี")
-
-    # Input method
-    input_method = st.radio(
-        "เลือกวิธีการใส่ข้อมูล",
-        ["📝 ใส่ข้อความ", "📁 อัพโหลดไฟล์"],
-        horizontal=True,
-    )
-
-    text = ""
-    if input_method == "📝 ใส่ข้อความ":
-        text = st.text_area(
-            "ใส่เนื้อหาเอกสาร",
-            height=200,
-            placeholder="วางเนื้อหาจาก OCR หรือเอกสาร...",
-            max_chars=50000,  # Security: Limit input size
-        )
-    else:
-        uploaded_file = st.file_uploader(
-            "อัพโหลดเอกสาร", type=["txt", "pdf", "docx"], help="ไฟล์สูงสุด 10MB"
-        )
-        if uploaded_file:
-            # Security: Limit file size to 10MB
-            if uploaded_file.size > 10 * 1024 * 1024:
-                st.error("❌ ไฟล์ใหญ่เกินไป (สูงสุด 10MB)")
-                return
-            text = uploaded_file.read().decode("utf-8", errors="ignore")
-
-    # Auto detect or select case type
     col1, col2 = st.columns(2)
     with col1:
-        auto_detect = st.checkbox("ตรวจหาประเภทคดีอัตโนมัติ", value=True)
+        case_type = st.selectbox("Case Type", ["wage_theft", "unfair_termination", "bonus_dispute"], key="sim_case")
     with col2:
-        if not auto_detect:
-            case_type = st.selectbox(
-                "เลือกประเภทคดี", ["แรงงาน", "ปกครอง", "แพ่ง", "อาญา"]
-            )
-        else:
-            case_type = None
+        scenario = st.selectbox("Scenario", [
+            "proceed_normally",
+            "settle_early",
+            "go_to_mediation",
+            "full_litigation",
+            "appeal_judgment",
+        ])
 
-    if text and st.button("🔍 ตรวจสอบเอกสาร", type="primary"):
-        with st.spinner("กำลังตรวจสอบ..."):
-            result = validate_document(text, case_type)
+    summary = st.text_area("Case Summary", placeholder="Brief description of the case...", height=100)
+    key_facts = st.text_area("Key Facts (one per line)", placeholder="Fact 1\nFact 2\nFact 3", height=100)
 
-            st.markdown("### 📊 ผลการตรวจสอบ")
+    if summary and st.button("🔮 Simulate", type="primary"):
+        orch = st.session_state.orchestrator
+        facts = [f.strip() for f in key_facts.split("\n") if f.strip()] if key_facts else []
 
-            # Overall status
-            is_valid = result.get("is_valid", False)
-            if is_valid:
-                st.success("✅ เอกสารครบถ้วน")
-            else:
-                st.warning("⚠️ เอกสารไม่ครบถ้วน")
+        with st.spinner("Running simulation..."):
+            result = orch.simulate_scenario(case_type, summary, scenario, facts)
 
-            # Score
-            score = result.get("score", 0)
-            st.metric("คะแนนความครบถ้วน", f"{score * 100:.0f}%")
+        data = result.get("data", {})
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Win Probability", f"{data.get('win_rate', 'N/A')}%")
+        with col2:
+            st.metric("Duration", f"{data.get('estimated_duration_days', 'N/A')} days")
+        with col3:
+            st.metric("Est. Cost", f"฿{data.get('estimated_cost_thb', 0):,}")
 
-            # Missing items
-            if result.get("missing_fields"):
-                st.subheader("📋 เอกสารที่ขาด")
-                for item in result.get("missing_fields", []):
-                    st.markdown(f"- {item}")
+        if data.get("risks"):
+            st.markdown("### ⚠️ Risks")
+            for r in data["risks"]:
+                st.markdown(f"- {r}")
+        if data.get("recommendations"):
+            st.markdown("### 💡 Recommendations")
+            for r in data["recommendations"]:
+                st.markdown(f"- {r}")
+        if data.get("best_case"):
+            st.success(f"**Best Case:** {data['best_case']}")
+        if data.get("worst_case"):
+            st.error(f"**Worst Case:** {data['worst_case']}")
 
-            # Suggestions
-            if result.get("suggestions"):
-                st.markdown("### 💡 ข้อเสนอแนะ")
-                for suggestion in result["suggestions"]:
-                    st.markdown(f"- {suggestion}")
+
+def bias_audit_page():
+    """Bias detection page."""
+    st.title("⚖️ Bias Audit")
+    st.markdown("Detect bias in legal texts using AI")
+
+    text = st.text_area("Paste text to audit for bias", height=200, placeholder="ใส่ข้อความภาษาไทยที่นี่...")
+
+    if text and st.button("🔍 Audit Bias", type="primary"):
+        orch = st.session_state.orchestrator
+        with st.spinner("Running bias audit..."):
+            result = orch.audit_bias(text)
+
+        data = result.get("data", {})
+        col1, col2 = st.columns(2)
+        with col1:
+            score = data.get("bias_score", 0)
+            st.metric("Bias Score", f"{score:.1f}%",
+                      delta="⚠️ Bias Detected" if score > 30 else "✅ Fair",
+                      delta_color="inverse" if score > 30 else "normal")
+        with col2:
+            categories = data.get("bias_categories", {})
+            if categories:
+                top = max(categories.items(), key=lambda x: x[1])
+                st.metric("Highest Category", f"{top[0]}: {top[1]:.1f}%")
+
+        if data.get("findings"):
+            st.markdown("### 🔎 Findings")
+            for finding in data["findings"]:
+                sev = finding.get("severity", "low")
+                emoji = {"high": "🔴", "medium": "🟡", "low": "🟢"}.get(sev, "⚪")
+                with st.expander(f"{emoji} {finding.get('category', '')} ({sev})"):
+                    st.markdown(f"**Text:** {finding.get('text', '')}")
+                    st.markdown(f"**Explanation:** {finding.get('explanation', '')}")
+                    if finding.get("suggestion"):
+                        st.markdown(f"**Suggestion:** {finding['suggestion']}")
+
+        if data.get("corrected_text"):
+            st.markdown("### ✨ Corrected Text")
+            st.text_area("Debiased version", data["corrected_text"], height=200)
 
 
 def pii_masking_page():
-    """PII Masking page (Challenge 3)."""
-    st.title("🔒 ปิดบังข้อมูลส่วนตัว")
-    st.markdown("ปิดบังข้อมูลส่วนตัว (PII) ก่อนเผยแพร่")
+    """PII masking page."""
+    st.title("🔒 PII Masking")
+    st.markdown("Protect personal information in legal documents")
 
-    # Input
-    text = st.text_area(
-        "ใส่ข้อความที่ต้องการปิดบัง",
-        height=200,
-        placeholder="วางเอกสารที่ต้องการปิดบังข้อมูลส่วนตัว...",
-    )
+    text = st.text_area("Paste text to mask PII", height=200, placeholder="วางเอกสารที่ต้องการปิดบังข้อมูลส่วนตัว...")
 
-    # PII types to mask
-    st.markdown("### 🎯 เลือกประเภทข้อมูลที่จะปิดบัง")
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        mask_name = st.checkbox("ชื่อ-นามสกุล", value=True)
+        mask_name = st.checkbox("Names", value=True)
     with col2:
-        mask_id = st.checkbox("เลขบัตรประชาชน", value=True)
+        mask_id = st.checkbox("National ID", value=True)
     with col3:
-        mask_address = st.checkbox("ที่อยู่", value=True)
+        mask_addr = st.checkbox("Address", value=True)
     with col4:
-        mask_phone = st.checkbox("เบอร์โทรศัพท์", value=True)
+        mask_phone = st.checkbox("Phone", value=True)
 
-    if text and st.button("🔒 ปิดบังข้อมูล", type="primary"):
-        with st.spinner("กำลังปิดบัง..."):
-            pii_config = {
-                "name": mask_name,
-                "national_id": mask_id,
-                "address": mask_address,
-                "phone": mask_phone,
-            }
+    if text and st.button("🔒 Mask PII", type="primary"):
+        orch = st.session_state.orchestrator
+        pii_config = {"name": mask_name, "national_id": mask_id, "address": mask_addr, "phone": mask_phone}
 
-            result = mask_pii(text, pii_config)
+        with st.spinner("Masking PII..."):
+            result = orch.mask_pii(text, pii_config)
 
-            st.markdown("### 📊 สรุปการตรวจพบ")
+        data = result.get("data", {})
+        summary = data.get("summary", {})
 
-            summary = pii_detection_summary(result)
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                st.metric("จำนวนที่ปิดบัง", summary.get("total_detected", 0))
-            with col2:
-                st.metric("ชื่อ", summary.get("names", 0))
-            with col3:
-                st.metric("เลขบัตร", summary.get("national_ids", 0))
-
-            st.markdown("### ✨ ข้อความที่ปิดบังแล้ว")
-            st.text_area(
-                "ผลลัพธ์",
-                result.get("masked_text", ""),
-                height=250,
-            )
-
-            # Download button
-            st.download_button(
-                "📥 ดาวน์โหลดเอกสาร",
-                result.get("masked_text", ""),
-                file_name="masked_document.txt",
-                mime="text/plain",
-            )
-
-
-def case_law_search_page():
-    """Case Law Search page (Challenge 3)."""
-    st.title("📚 ค้นหาคำพิพากษา")
-    st.markdown("ค้นหาแนวคำพิพากษาศาลไทย")
-
-    # Search input
-    query = st.text_input(
-        "🔍 ค้นหาคำพิพากษา",
-        placeholder="เช่น ค่าจ้าง นายจ้าง ไม่จ่าย...",
-    )
-
-    # Filters
-    with st.expander("🔧 ตัวกรองเพิ่มเติม"):
-        col1, col2 = st.columns(2)
+        col1, col2, col3 = st.columns(3)
         with col1:
-            court_filter = st.selectbox(
-                "ศาล",
-                ["ทุกศาล", "ศาลแรงงาน", "ศาลปกครอง", "ศาลแพ่ง", "ศาลอาญา"],
-            )
+            st.metric("Total PII Found", summary.get("total_detected", 0))
         with col2:
-            year_filter = st.slider("ปี", 2560, 2568, 2568)
+            st.metric("Names", summary.get("names", 0))
+        with col3:
+            st.metric("National IDs", summary.get("national_ids", 0))
 
-    if query and st.button("🔍 ค้นหา", type="primary"):
-        with st.spinner("กำลังค้นหา..."):
-            results = search_case_laws(
-                query,
-                court=None if court_filter == "ทุกศาล" else court_filter,
-                year=year_filter,
-            )
-
-            st.markdown(f"### 📋 ผลการค้นหา ({len(results)} รายการ)")
-
-            if not results:
-                st.info("ไม่พบคำพิพากษาที่ตรงกับเงื่อนไข")
-            else:
-                for i, case in enumerate(results[:10], 1):
-                    with st.expander(f"📄 #{i} {case.get('case_number', 'N/A')}"):
-                        st.markdown(f"**ศาล:** {case.get('court', 'N/A')}")
-                        st.markdown(f"**ปี:** {case.get('year', 'N/A')}")
-                        st.markdown(f"**คดี:** {case.get('case_type', 'N/A')}")
-                        st.markdown(f"**ประเด็น:** {case.get('issue', 'N/A')}")
-                        st.markdown(f"**สรุป:** {case.get('summary', 'N/A')}")
-
-                        # Show full judgment if available
-                        if case.get("judgment"):
-                            with st.expander("📜 คำพิพากษาเต็ม"):
-                                st.markdown(case["judgment"])
+        st.markdown("### ✨ Masked Text")
+        masked = data.get("masked_text", "")
+        st.text_area("Result", masked, height=250)
+        st.download_button("📥 Download Masked Document", masked, file_name="masked_document.txt", mime="text/plain")
 
 
-def document_summarizer_page():
-    """Document Summarizer page (Challenge 4)."""
-    st.title("📝 สรุปเอกสาร")
-    st.markdown("สรุปเอกสารคดีและยกร่างรายงาน")
+def case_law_page():
+    """Case law search page."""
+    st.title("📚 Case Law Search")
+    st.markdown("Search Thai court precedents using AI")
 
-    # Input
-    text = st.text_area(
-        "ใส่เอกสารที่ต้องการสรุป",
-        height=200,
-        placeholder="วางเนื้อหาเอกสารที่นี่...",
-    )
+    query = st.text_input("🔍 Search query", placeholder="e.g., ค่าจ้าง นายจ้าง ไม่จ่าย...")
 
-    # Summary options
     col1, col2 = st.columns(2)
     with col1:
-        summary_length = st.select_slider(
-            "ความยาวสรุป",
-            options=["สั้น", "ปานกลาง", "ยาว"],
-            value="ปานกลาง",
-        )
+        court = st.selectbox("Court", ["", "ศาลแรงงาน", "ศาลฎีกา", "ศาลปกครอง", "ศาลแพ่ง"])
     with col2:
-        include_key_points = st.checkbox("รวมประเด็นสำคัญ", value=True)
+        case_type = st.selectbox("Case Type", ["", "wage_theft", "unfair_termination", "bonus_dispute"])
 
-    if text and st.button("📝 สรุปเอกสาร", type="primary"):
-        with st.spinner("กำลังสรุป..."):
-            length_map = {"สั้น": "short", "ปานกลาง": "medium", "ยาว": "long"}
+    if query and st.button("🔍 Search", type="primary"):
+        orch = st.session_state.orchestrator
+        with st.spinner("Searching case law..."):
+            result = orch.search_case_law(query, case_type=case_type, court=court)
 
-            result = summarize_document(
-                text,
-                length=length_map[summary_length],
-                include_key_points=include_key_points,
-            )
+        data = result.get("data", {})
+        cases = data.get("cases", [])
+        st.markdown(f"### 📋 Results ({len(cases)} cases)")
 
-            st.markdown("### 📋 สรุปเอกสาร")
-            st.markdown(result.get("summary", ""))
+        if cases:
+            for case in cases:
+                with st.expander(f"📄 {case.get('case_number', 'N/A')} — {case.get('issue', '')}"):
+                    st.markdown(f"**Court:** {case.get('court', 'N/A')}")
+                    st.markdown(f"**Year:** {case.get('year', 'N/A')}")
+                    st.markdown(f"**Summary:** {case.get('summary', 'N/A')}")
+                    st.markdown(f"**Key Principle:** {case.get('key_principle', 'N/A')}")
+                    if case.get("applicable_sections"):
+                        st.markdown(f"**Sections:** {', '.join(case['applicable_sections'])}")
+                    st.progress(case.get("relevance_score", 0.5))
+        else:
+            st.info("No results found. Try a different query.")
 
-            if result.get("key_points") and include_key_points:
-                st.markdown("### 🎯 ประเด็นสำคัญ")
-                for point in result["key_points"]:
-                    st.markdown(f"- {point}")
 
-            if result.get("entities"):
-                with st.expander("🏷️ ข้อมูลที่ระบุ"):
-                    for entity_type, entities in result["entities"].items():
-                        st.markdown(f"**{entity_type}:** {', '.join(entities)}")
+def document_summary_page():
+    """Document summarization page."""
+    st.title("📝 Document Summary")
+    st.markdown("Summarize legal documents using AI")
 
-            # Generate report option
-            st.markdown("---")
-            st.markdown("### 📄 ยกร่างรายงาน")
-            if st.button("📄 สร้างรายงาน"):
-                report = generate_report(result, result.get("summary", ""))
-                st.text_area("รายงาน", report, height=300)
-                st.download_button(
-                    "📥 ดาวน์โหลดรายงาน",
-                    report,
-                    file_name="legal_report.txt",
-                    mime="text/plain",
-                )
+    text = st.text_area("Paste document to summarize", height=200, placeholder="วางเอกสารที่ต้องการสรุป...")
+    length = st.select_slider("Summary Length", options=["short", "medium", "long"], value="medium")
+
+    if text and st.button("📝 Summarize", type="primary"):
+        orch = st.session_state.orchestrator
+        with st.spinner("Summarizing..."):
+            result = orch.summarize_document(text, length=length)
+
+        data = result.get("data", {})
+        st.markdown("### 📋 Summary")
+        st.markdown(data.get("summary", "Could not generate summary"))
+
+        if data.get("key_points"):
+            st.markdown("### 🎯 Key Points")
+            for point in data["key_points"]:
+                st.markdown(f"- {point}")
+
+        if data.get("entities"):
+            with st.expander("🏷️ Extracted Entities"):
+                for etype, entities in data["entities"].items():
+                    if entities:
+                        st.markdown(f"**{etype}:** {', '.join(entities)}")
+
+
+def agent_dashboard_page():
+    """Agent status dashboard."""
+    st.title("📊 Agent Dashboard")
+    st.markdown("Monitor the multi-agent system")
+
+    orch = st.session_state.orchestrator
+
+    # LLM Status
+    st.markdown("### ⚡ LLM Service")
+    health = orch.llm.health_check()
+    if health["status"] == "healthy":
+        st.success(f"✅ Connected — Models: {', '.join(health.get('models', []))}")
+    else:
+        st.error(f"❌ Disconnected — {health.get('error', 'Unknown error')}")
+        st.info(f"**Endpoint:** {orch.llm.config.base_url}")
+        st.info("Make sure vLLM is running on your AMD Developer Cloud instance.")
+
+    # Agent cards
+    st.markdown("### 🤖 Agents")
+    cols = st.columns(4)
+    for i, agent in enumerate(orch.agents):
+        with cols[i]:
+            tasks = len(agent.history)
+            st.markdown(f"""
+            <div class="metric-card">
+                <h3>{agent.name}</h3>
+                <p>{agent.description}</p>
+                <h2>{tasks}</h2>
+                <p>tasks completed</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+    # Execution log
+    if orch._execution_log:
+        st.markdown("### 📋 Recent Execution Log")
+        for entry in reversed(orch._execution_log[-20:]):
+            st.markdown(f"- `{entry['event']}` — {entry.get('data', '')}")
+
+    # Architecture diagram
+    st.markdown("### 🏗️ Architecture")
+    st.code("""
+    ┌─────────────────────────────────────────┐
+    │           OrchestratorAgent              │
+    │         (Workflow Coordinator)           │
+    └────────┬──────┬──────┬──────┬───────────┘
+             │      │      │      │
+    ┌────────▼──┐ ┌─▼────┐ ┌▼─────┐ ┌▼────────┐
+    │  Legal    │ │ Case │ │ Case │ │  Bias   │
+    │ Analysis  │ │Strat.│ │ Law  │ │  Audit  │
+    │  Agent    │ │Agent │ │Agent │ │  Agent  │
+    └─────┬─────┘ └──┬───┘ └──┬───┘ └────┬────┘
+          │          │        │           │
+    ┌─────▼──────────▼────────▼───────────▼────┐
+    │              LLM Service                  │
+    │        (OpenAI-compatible API)            │
+    └──────────────────┬───────────────────────┘
+                       │
+    ┌──────────────────▼───────────────────────┐
+    │     vLLM + ROCm on AMD MI300X            │
+    │     (AMD Developer Cloud)                │
+    └──────────────────────────────────────────┘
+    """, language="text")
 
 
 def main():
     """Main application entry point."""
     init_session_state()
+    menu = sidebar()
 
-    # Check if logged in
-    if not st.session_state.get("logged_in"):
-        login_page()
-        return
-
-    menu = sidebar_navigation()
-
-    if menu == "🏠 หน้าหลัก":
+    if menu == "🏠 Home":
         home_page()
-    elif menu == "📄 สแกนเอกสาร":
-        scan_page()
-    elif menu == "🗺️ แผนที่คดี":
-        map_page()
-    elif menu == "🔮 ทำนายผล":
+    elif menu == "🔍 Full Case Analysis":
+        full_analysis_page()
+    elif menu == "🗺️ Case Map":
+        case_map_page()
+    elif menu == "🔮 What-If Simulator":
         simulator_page()
-    elif menu == "⚖️ ตรวจอคติ":
-        bias_check_page()
-    elif menu == "✅ ตรวจเอกสาร":
-        document_validation_page()
-    elif menu == "🔒 ปิดบังข้อมูลส่วนตัว":
+    elif menu == "⚖️ Bias Audit":
+        bias_audit_page()
+    elif menu == "🔒 PII Masking":
         pii_masking_page()
-    elif menu == "📚 ค้นหาคำพิพากษา":
-        case_law_search_page()
-    elif menu == "📝 สรุปเอกสาร":
-        document_summarizer_page()
+    elif menu == "📚 Case Law Search":
+        case_law_page()
+    elif menu == "📝 Document Summary":
+        document_summary_page()
+    elif menu == "📊 Agent Dashboard":
+        agent_dashboard_page()
 
 
 if __name__ == "__main__":

@@ -1,185 +1,171 @@
-# 🚂 KadiRail AI
+# 🚂 KadiRail AI — Multi-Agent Legal Navigation System
 
-> **แผนที่นำทางคดีความสำหรับคนไทย**  
-> Legal Case Navigation Tool with Responsible AI  
-> Inspired by Responsible AI Innovation Hackathon 2026 (ศาลยุติธรรม × ETDA × AWS)
+> Transform complex Thai legal cases into clear, actionable navigation maps — powered by AI agents on AMD GPUs.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![Streamlit](https://img.shields.io/badge/Streamlit-1.0+-ff4b4b.svg)](https://streamlit.io/)
+**AMD Developer Hackathon 2026 — Track 1: AI Agents & Agentic Workflows**
 
-### 🎯 ลดเวลาเข้าใจคดี: 120 นาที → 5 นาที (96% faster)
-
-เปลี่ยนกระบวนการยุติธรรมไทยที่ซับซ้อนให้กลายเป็น "แผนที่รถไฟ" ที่คนธรรมดาเข้าใจได้ทันที
+**Team: NovaPulse**
 
 ---
 
-## 💭 Impact Vision
+## 🎯 Problem
 
-**มันไม่สำคัญว่าเรามาทำอะไรกันที่นี่ แต่มันสำคัญกว่าว่าเราจะทิ้งอะไรไว้**
+Navigating the Thai legal system is overwhelming for ordinary citizens. Understanding a labor dispute case takes **~120 minutes** of reading dense legal documents, researching precedents, and figuring out the process. Most people give up or make uninformed decisions.
 
-KadiRail AI ถูกสร้างมาเพื่อเป็น "แผนที่นำทาง" ที่ช่วยให้คนธรรมดา — โดยเฉพาะคนที่ไม่มีเงินจ้างทนาย — **กล้าเริ่มต้นกระบวนการยุติธรรมได้ง่ายขึ้น**
+## 💡 Solution
 
-> ถ้าคุณ fork ไปใช้ แค่ช่วยให้คนไทยคนหนึ่งเข้าใจคดีตัวเองเร็วขึ้น 5 นาที — สำหรับผม นั่นคือความสำเร็จที่ใหญ่ที่สุดแล้ว
+KadiRail AI uses **5 specialized AI agents** running on **AMD Instinct MI300X** GPUs to analyze Thai legal cases end-to-end in **under 5 minutes** — a **96% reduction** in case understanding time.
 
----
+The system transforms legal procedures into an interactive "train station" map, making the legal journey as intuitive as navigating a railway system.
 
-## ✨ Features
+## 🏗️ Architecture
 
-| Feature | Description |
-|---------|-------------|
-| 📄 **Document Scanner** | LINE OCR สำหรับเอกสารกฎหมายไทย - highlight จุดเสี่ยง |
-| 🗺️ **Case Map Engine** | แปลงขั้นตอนคดีเป็นแผนที่ interactive ด้วย Mermaid.js - ลาก branch ได้ |
-| 🔮 **WhatIf Simulator** | จำลองทางเลือกต่างๆ พร้อม % โอกาสสำเร็จ + เวลา + ต้นทุน |
-| ⚖️ **Bias Engine** | ตรวจจับ bias ในข้อความกฎหมาย (แยก train มีทนาย vs ไม่มีทนาย) |
-| 🔒 **PII Masking** | ปิดบังข้อมูลส่วนบุคคลอัตโนมัติ |
-| 📚 **Case Law Search** | ค้นหาคำพิพากษาที่เกี่ยวข้อง |
-| 📝 **Document Summarizer** | สรุปเอกสารยาวๆ ให้เข้าใจง่าย |
+```
+┌─────────────────────────────────────────┐
+│           OrchestratorAgent              │
+│         (Workflow Coordinator)           │
+└────────┬──────┬──────┬──────┬───────────┘
+         │      │      │      │
+┌────────▼──┐ ┌─▼────┐ ┌▼─────┐ ┌▼────────┐
+│  Legal    │ │ Case │ │ Case │ │  Bias   │
+│ Analysis  │ │Strat.│ │ Law  │ │  Audit  │
+│  Agent    │ │Agent │ │Agent │ │  Agent  │
+└─────┬─────┘ └──┬───┘ └──┬───┘ └────┬────┘
+      │          │        │           │
+┌─────▼──────────▼────────▼───────────▼────┐
+│              LLM Service                  │
+│        (OpenAI-compatible API)            │
+└──────────────────┬───────────────────────┘
+                   │
+┌──────────────────▼───────────────────────┐
+│     vLLM + ROCm on AMD MI300X            │
+│     (AMD Developer Cloud)                │
+└──────────────────────────────────────────┘
+```
 
-### Supported Case Types (MVP)
+### Agents
 
-| ประเภทคดี | English |
-|-----------|---------|
-| โกงค่าจ้าง | Wage Theft |
-| ถูกเลิกจ้างไม่เป็นธรรม | Unfair Termination |
-| ไม่จ่ายโบนัส | Bonus Dispute |
+| Agent | Responsibility |
+|-------|---------------|
+| 🔍 **LegalAnalysisAgent** | Document analysis, case classification, entity extraction, risk assessment |
+| 🗺️ **CaseStrategyAgent** | What-If simulation, timeline/cost estimation, case map generation |
+| ⚖️ **BiasAuditAgent** | Bias detection (gender, age, nationality), PII masking, fairness scoring |
+| 📚 **CaseLawAgent** | Case law search, document summarization, legal report generation |
+| 🎯 **OrchestratorAgent** | Coordinates all agents in optimal workflow, manages pipeline execution |
 
----
+### Workflow
 
-## ⚡ Quick Start (3 ขั้นตอน)
+1. **Document Input** → User uploads/pastes a legal document
+2. **LegalAnalysisAgent** → Classifies case type, extracts entities, assesses risk
+3. **Parallel Processing** → CaseStrategy + CaseLaw + BiasAudit run on extracted data
+4. **OrchestratorAgent** → Combines results into a unified case navigation map
+5. **Output** → Interactive dashboard with maps, simulations, and recommendations
+
+## ⚡ Tech Stack
+
+| Component | Technology |
+|-----------|-----------|
+| **GPU** | AMD Instinct MI300X (192GB VRAM) |
+| **Runtime** | ROCm 6.x |
+| **LLM Serving** | vLLM (OpenAI-compatible API) |
+| **LLM Model** | Qwen2-7B-Instruct (open-source) |
+| **Backend** | Python 3.11+ |
+| **Frontend** | Streamlit |
+| **NLP** | PyThaiNLP (Thai language processing) |
+| **Cloud** | AMD Developer Cloud |
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Python 3.11+
+- AMD Developer Cloud instance with MI300X GPU (or any vLLM endpoint)
+
+### 1. Clone & Install
 
 ```bash
-# Clone repo
 git clone https://github.com/Dr-SoloDev/kadirail-ai.git
 cd kadirail-ai
-
-# สร้าง virtual environment (แนะนำ uv หรือ venv)
-uv venv && source .venv/bin/activate
-# หรือ python -m venv venv && source venv/bin/activate
-
-# ติดตั้ง dependencies
-uv pip install -r requirements.txt
-# หรือ pip install -r requirements.txt
-
-# รันแอพ
-streamlit run streamlit_app.py
-# เปิดเบราว์เซอร์ที่ http://localhost:8501
+pip install -r requirements.txt
 ```
 
-### LINE OCR Setup (สำหรับ Document Scanner)
-
-สร้างไฟล์ `.env` ใน root folder แล้วใส่:
-
-```env
-LINE_CHANNEL_ID=your_channel_id
-LINE_CHANNEL_SECRET=your_channel_secret
-LINE_ACCESS_TOKEN=your_access_token
-```
-
----
-
-## Live Demo
-
-### 🚀 Deploy to Hugging Face Spaces (Free)
+### 2. Start vLLM on AMD Developer Cloud
 
 ```bash
-# วิธีที่ 1: ผ่าน Web (แนะนำ)
-1. ไปที่ https://huggingface.co/spaces
-2. Create new Space → เลือก Streamlit
-3. เลือก GitHub repository: Dr-SoloDev/kadirail-ai
-4. เลือก Branch: master
-5. เลือก App file: streamlit_app.py
-6. กด Create!
-
-# วิธีที่ 2: ผ่าน CLI
-pip install huggingface_hub
-huggingface-cli space create Dr-SoloDev/kadirail-ai \
-  --sdk streamlit \
-  --emoji ⚖️
+# SSH into your AMD Developer Cloud instance
+vllm serve Qwen/Qwen2-7B-Instruct --host 0.0.0.0 --port 8000
 ```
 
-### 📺 Live Demo Link
+### 3. Configure Environment
 
-[![Hugging Face Spaces](https://img.shields.io/badge/%F0%9F%8F%97%20Hugging%20Face-KadiRail%20AI-blue)](https://kadirail-kadirail-ai.hf.space)
+```bash
+cp .env.example .env
+# Edit .env and set LLM_BASE_URL=http://<YOUR_VM_IP>:8000/v1
+```
 
-### GIF แสดงการใช้งานหลัก (ตัวอย่าง placeholder – แทนด้วย GIF จริงของคุณ)
+### 4. Run the App
 
-#### สร้างแผนที่คดีจากปัญหา
-![Demo: Create Case Map](https://via.placeholder.com/800x450?text=Demo:+Create+Case+Map)
-*(พิมพ์ "โดนโกงค่าจ้าง 8000" → แผนที่ Mermaid ขึ้นทันที + สถานีต่าง ๆ)*
+```bash
+streamlit run streamlit_app.py
+```
 
-#### What-If Simulator
-![Demo: What-If Simulator](https://via.placeholder.com/800x450?text=Demo:+What-If+Simulator)
-*(ลาก branch เปลี่ยนทางเลือก → % โอกาส + เวลาเปลี่ยนตามทันที)*
+## 📋 Features
 
-#### Document Scanner + Highlight
-![Demo: Document Scanner](https://via.placeholder.com/800x450?text=Demo:+Document+Scanner)
-*(อัพโหลดสัญญา → ไฮไลท์จุดเสี่ยงสีแดง + แทรกเข้าแผนที่)*
+- **Full Case Analysis** — One-click analysis using all 5 agents
+- **Case Map** — Visual railway-style legal process map
+- **What-If Simulator** — Simulate different legal strategies
+- **Bias Audit** — Detect bias in legal documents (gender, age, nationality)
+- **PII Masking** — Protect personal information before sharing
+- **Case Law Search** — Find relevant Thai court precedents
+- **Document Summary** — AI-powered legal document summarization
+- **Agent Dashboard** — Monitor agent status and execution logs
 
-> **วิธีสร้าง GIF เองง่าย ๆ:**
-> - ใช้ [Loom](https://www.loom.com/) (ฟรี) บันทึกหน้าจอขณะรัน Streamlit
-> - หรือ [Peek](https://github.com/JohnWong/peek) (Linux) / [Kap](https://getkap.co/) (macOS)
-> - แล้วอัพโหลดขึ้น [imgur.com](https://imgur.com/) หรือ GitHub Issues
-> - แทนลิงก์ด้านบนด้วย URL จริง
+## 📊 Supported Case Types
 
----
+| Type | Thai | Description |
+|------|------|-------------|
+| `wage_theft` | โกงค่าจ้าง | Unpaid or underpaid wages |
+| `unfair_termination` | เลิกจ้างไม่เป็นธรรม | Wrongful dismissal |
+| `bonus_dispute` | ไม่จ่ายโบนัส | Withheld bonus payments |
 
-## Project Structure
+## 🏆 AMD GPU Usage
+
+KadiRail AI leverages AMD hardware throughout:
+
+- **vLLM** serves the open-source LLM on **AMD Instinct MI300X** via **ROCm**
+- **192GB HBM3** enables large model inference (supports up to 72B parameter models)
+- **OpenAI-compatible API** means zero vendor lock-in — any open-source model works
+- All inference happens on AMD GPU — no external API calls to OpenAI/Anthropic
+
+## 📁 Project Structure
 
 ```
 kadirail-ai/
-├── app/                  # Streamlit application (9 หน้า)
-│   └── main.py
-├── core/                 # Logic หลัก
-│   ├── scanner.py
-│   ├── map_engine.py
-│   ├── simulator.py
-│   ├── bias_engine.py
-│   └── document_validator.py
-├── utils/                # Utilities
-│   ├── thai_nlp.py
-│   ├── pii_masking.py
-│   ├── case_law_search.py
-│   ├── document_summarizer.py
-│   └── mermaid_gen.py
-├── data/                 # Mock data
-│   └── mock_generator.py # สร้าง mock case 10,000+ คดี
-├── .env.example
-├── agent.md
-├── CONTRIBUTING.md
-├── LICENSE               # MIT
-├── README.md
+├── agents/                  # Multi-agent system
+│   ├── base_agent.py       # Abstract base agent class
+│   ├── legal_analysis_agent.py
+│   ├── case_strategy_agent.py
+│   ├── bias_audit_agent.py
+│   ├── case_law_agent.py
+│   └── orchestrator.py     # Agent coordinator
+├── services/
+│   └── llm_service.py      # vLLM/OpenAI-compatible client
+├── app/
+│   └── main.py             # Streamlit application
+├── core/                    # Legacy modules (preserved)
+├── utils/                   # Utility functions
+├── streamlit_app.py         # Entry point
 ├── requirements.txt
-└── ruff.toml
+└── .env.example
 ```
 
----
+## 📄 License
 
-## How to Contribute
+MIT License — see [LICENSE](LICENSE) for details.
 
-โปรเจกต์นี้เปิดกว้าง 100% สำหรับทุกคนที่อยากช่วยพัฒนาต่อ  
-ไม่ว่าจะเป็น:
+## 🙏 Acknowledgments
 
-- 🗣️ เพิ่ม dialect support (อีสาน/ใต้/เหนือ)
-- 🎮 เพิ่ม gamification (badge, Justice Quest)
-- ⚖️ ปรับปรุง bias engine ให้แม่นยำขึ้น
-- 🔗 เพิ่ม integration กับราชกิจจาฯ หรือเว็บศาลจริง
-
-**Workflow:**
-```
-Fork → Create branch → Commit → Open Pull Request
-```
-
-ทุก contribution จะช่วยให้ไอเดียนี้ไปถึงคนที่ต้องการมากขึ้น
-
-ดูรายละเอียดเพิ่มเติมได้ที่ [CONTRIBUTING.md](./CONTRIBUTING.md)
-
----
-
-## License
-
-MIT License – ดูรายละเอียดใน [LICENSE](./LICENSE)
-
----
-
-ขอบคุณทุกคนที่สนใจและช่วยกันทำให้โลกนี้ดีขึ้นแม้เพียงเล็กน้อย 🚂⚖️
+- **AMD** — Developer Cloud credits and MI300X GPU access
+- **lablab.ai** — Hackathon platform and community
+- **vLLM** — High-performance LLM serving with ROCm support
+- **Qwen Team** — Qwen2-7B-Instruct open-source model

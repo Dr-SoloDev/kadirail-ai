@@ -1,5 +1,6 @@
-# KadiRail AI - Requirements
-# Legal Case Navigation Tool for Thailand
+# KadiRail AI - Multi-Agent Legal Navigation System
+# AMD Developer Hackathon 2026 — Track 1: AI Agents & Agentic Workflows
+# Running on AMD Instinct MI300X + ROCm + vLLM
 
 # Install local package in editable mode
 -e .
@@ -7,7 +8,7 @@
 # Core
 streamlit>=1.28.0
 
-# HTTP
+# HTTP (for LLM service + vLLM API)
 requests>=2.31.0
 
 # Data
@@ -15,6 +16,9 @@ pandas>=2.0.0
 
 # NLP (Thai)
 pythainlp>=4.0.0
+
+# Environment config
+python-dotenv>=1.0.0
 
 # Visualization
 # mermaid.js is loaded via CDN in the app
