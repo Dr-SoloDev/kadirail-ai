@@ -3,7 +3,7 @@
 # Running on AMD Instinct MI300X + ROCm + vLLM
 
 # Install local package in editable mode
--e .
+# -e .
 
 # Core
 streamlit>=1.28.0
