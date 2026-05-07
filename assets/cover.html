@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1280">
+<title>KadiRail AI — Cover Image</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+Thai:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  width: 1280px;
+  height: 720px;
+  overflow: hidden;
+  font-family: 'Inter', 'Noto Sans Thai', sans-serif;
+  background: #0a0e27;
+  position: relative;
+}
+
+/* Animated gradient background */
+.bg-gradient {
+  position: absolute;
+  inset: 0;
+  background: 
+    radial-gradient(ellipse 80% 60% at 20% 50%, rgba(99, 102, 241, 0.15) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 80% at 80% 30%, rgba(16, 185, 129, 0.12) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 50% at 50% 80%, rgba(245, 158, 11, 0.08) 0%, transparent 70%);
+}
+
+/* Rail track pattern */
+.rail-pattern {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 200px;
+  opacity: 0.06;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 58px,
+    #667eea 58px,
+    #667eea 62px
+  );
+}
+.rail-line {
+  position: absolute;
+  bottom: 80px;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, transparent, #667eea 20%, #667eea 80%, transparent);
+  opacity: 0.15;
+}
+.rail-line:nth-child(2) {
+  bottom: 120px;
+}
+
+/* Station dots */
+.stations {
+  position: absolute;
+  bottom: 68px;
+  left: 10%;
+  right: 10%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.station {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 3px solid rgba(102, 126, 234, 0.3);
+  background: rgba(102, 126, 234, 0.1);
+  position: relative;
+}
+.station::after {
+  content: attr(data-label);
+  position: absolute;
+  top: -24px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  color: rgba(255,255,255,0.3);
+  white-space: nowrap;
+  font-weight: 500;
+}
+.station.active {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.2);
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+}
+.connector {
+  flex: 1;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(102, 126, 234, 0.2), rgba(16, 185, 129, 0.2));
+}
+
+/* Main content */
+.content {
+  position: relative;
+  z-index: 10;
+  padding: 60px 80px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 40px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  border-radius: 100px;
+  background: rgba(102, 126, 234, 0.15);
+  border: 1px solid rgba(102, 126, 234, 0.3);
+  color: #a5b4fc;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+.badge-amd {
+  background: rgba(237, 28, 36, 0.12);
+  border-color: rgba(237, 28, 36, 0.3);
+  color: #f87171;
+}
+
+.title-block {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin-top: -30px;
+}
+
+.logo-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+h1 {
+  font-size: 72px;
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  background: linear-gradient(135deg, #ffffff 0%, #a5b4fc 50%, #10b981 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 16px;
+}
+
+.subtitle {
+  font-size: 22px;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 400;
+  line-height: 1.5;
+  max-width: 700px;
+}
+.subtitle strong {
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 600;
+}
+
+/* Agent cards floating */
+.agent-cards {
+  position: absolute;
+  right: 80px;
+  top: 50%;
+  transform: translateY(-55%);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.agent-card {
+  padding: 14px 20px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 260px;
+}
+.agent-card .icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.agent-card .icon.analysis { background: rgba(99, 102, 241, 0.2); }
+.agent-card .icon.strategy { background: rgba(16, 185, 129, 0.2); }
+.agent-card .icon.bias { background: rgba(245, 158, 11, 0.2); }
+.agent-card .icon.caselaw { background: rgba(236, 72, 153, 0.2); }
+.agent-card .name {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+}
+.agent-card .desc {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+  margin-top: 2px;
+}
+
+/* Bottom info */
+.bottom {
+  position: absolute;
+  bottom: 30px;
+  left: 80px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  z-index: 10;
+}
+.team {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.4);
+  font-weight: 500;
+}
+.team strong {
+  color: rgba(255, 255, 255, 0.7);
+}
+.tech-stack {
+  display: flex;
+  gap: 8px;
+}
+.tech-tag {
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+  font-weight: 500;
+}
+</style>
+</head>
+<body>
+<div class="bg-gradient"></div>
+<div class="rail-pattern"></div>
+<div class="rail-line"></div>
+<div class="rail-line"></div>
+
+<div class="stations">
+  <div class="station active" data-label="วิเคราะห์"></div>
+  <div class="connector"></div>
+  <div class="station" data-label="กลยุทธ์"></div>
+  <div class="connector"></div>
+  <div class="station" data-label="ตรวจอคติ"></div>
+  <div class="connector"></div>
+  <div class="station" data-label="ค้นคำพิพากษา"></div>
+  <div class="connector"></div>
+  <div class="station" data-label="รายงาน"></div>
+</div>
+
+<div class="content">
+  <div class="top-bar">
+    <div class="badge">🚉 Multi-Agent Legal Navigation System</div>
+    <div class="badge badge-amd">⚡ AMD Instinct MI300X + ROCm</div>
+  </div>
+
+  <div class="title-block">
+    <div class="logo-icon">🚉</div>
+    <h1>KadiRail AI</h1>
+    <p class="subtitle">
+      ระบบนำทางกฎหมายไทยอัจฉริยะ ขับเคลื่อนด้วย <strong>Multi-Agent AI</strong><br>
+      วิเคราะห์คดี • จำลองผลลัพธ์ • ตรวจอคติ • ค้นคำพิพากษา
+    </p>
+  </div>
+</div>
+
+<div class="agent-cards">
+  <div class="agent-card">
+    <div class="icon analysis">⚖️</div>
+    <div>
+      <div class="name">Legal Analysis Agent</div>
+      <div class="desc">วิเคราะห์เอกสาร จำแนกประเภทคดี</div>
+    </div>
+  </div>
+  <div class="agent-card">
+    <div class="icon strategy">🎯</div>
+    <div>
+      <div class="name">Case Strategy Agent</div>
+      <div class="desc">จำลองสถานการณ์ วางกลยุทธ์</div>
+    </div>
+  </div>
+  <div class="agent-card">
+    <div class="icon bias">🔍</div>
+    <div>
+      <div class="name">Bias Audit Agent</div>
+      <div class="desc">ตรวจจับอคติ ปกป้องข้อมูลส่วนตัว</div>
+    </div>
+  </div>
+  <div class="agent-card">
+    <div class="icon caselaw">📚</div>
+    <div>
+      <div class="name">Case Law Agent</div>
+      <div class="desc">ค้นหาคำพิพากษาที่เกี่ยวข้อง</div>
+    </div>
+  </div>
+</div>
+
+<div class="bottom">
+  <span class="team">Team <strong>NovaPulse</strong> · AMD Developer Hackathon 2026</span>
+  <div class="tech-stack">
+    <span class="tech-tag">Qwen2-7B</span>
+    <span class="tech-tag">vLLM</span>
+    <span class="tech-tag">ROCm</span>
+    <span class="tech-tag">MI300X</span>
+    <span class="tech-tag">Streamlit</span>
+  </div>
+</div>
+</body>
+</html>

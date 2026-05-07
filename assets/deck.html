@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1280">
+<title>KadiRail AI — Pitch Deck</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+Thai:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-snap-type: x mandatory; }
+body {
+  font-family: 'Inter', 'Noto Sans Thai', sans-serif;
+  background: #0a0e27;
+  color: #fff;
+  overflow-x: auto;
+  overflow-y: hidden;
+  height: 100vh;
+  display: flex;
+}
+
+.slide {
+  min-width: 1280px;
+  width: 1280px;
+  height: 720px;
+  flex-shrink: 0;
+  scroll-snap-align: start;
+  position: relative;
+  overflow: hidden;
+  padding: 60px 80px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Shared styles */
+.slide-num {
+  position: absolute;
+  bottom: 30px;
+  right: 40px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.2);
+  font-weight: 500;
+}
+.bg-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(120px);
+  pointer-events: none;
+}
+
+/* ===== SLIDE 1: Title ===== */
+.s1 { justify-content: center; }
+.s1 .bg-glow { width: 600px; height: 600px; background: rgba(99,102,241,0.12); top: -100px; left: -100px; }
+.s1 .bg-glow2 { width: 400px; height: 400px; background: rgba(16,185,129,0.08); bottom: -50px; right: 100px; position: absolute; border-radius: 50%; filter: blur(120px); }
+.s1 .badge { display: inline-flex; padding: 6px 16px; border-radius: 100px; background: rgba(102,126,234,0.15); border: 1px solid rgba(102,126,234,0.3); color: #a5b4fc; font-size: 13px; font-weight: 500; margin-bottom: 24px; width: fit-content; }
+.s1 h1 { font-size: 80px; font-weight: 900; letter-spacing: -0.03em; line-height: 1.05; background: linear-gradient(135deg, #fff 0%, #a5b4fc 50%, #10b981 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 20px; }
+.s1 .sub { font-size: 24px; color: rgba(255,255,255,0.5); font-weight: 400; line-height: 1.6; max-width: 700px; }
+.s1 .sub strong { color: rgba(255,255,255,0.8); font-weight: 600; }
+.s1 .meta { position: absolute; bottom: 50px; left: 80px; display: flex; gap: 20px; align-items: center; }
+.s1 .meta span { font-size: 14px; color: rgba(255,255,255,0.35); font-weight: 500; }
+.s1 .meta strong { color: rgba(255,255,255,0.6); }
+
+/* ===== SLIDE 2: Problem ===== */
+.s2 .bg-glow { width: 500px; height: 500px; background: rgba(239,68,68,0.1); top: -50px; right: -100px; }
+.s2 h2 { font-size: 14px; font-weight: 600; color: #f87171; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px; }
+.s2 h3 { font-size: 48px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 48px; color: #fff; line-height: 1.15; }
+.s2 h3 em { font-style: normal; color: #f87171; }
+.problem-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; flex: 1; }
+.problem-card { padding: 28px; border-radius: 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); }
+.problem-card .num { font-size: 32px; font-weight: 800; color: rgba(248,113,113,0.3); margin-bottom: 8px; }
+.problem-card h4 { font-size: 18px; font-weight: 700; margin-bottom: 8px; color: rgba(255,255,255,0.9); }
+.problem-card p { font-size: 14px; color: rgba(255,255,255,0.45); line-height: 1.6; }
+
+/* ===== SLIDE 3: Solution ===== */
+.s3 .bg-glow { width: 600px; height: 600px; background: rgba(16,185,129,0.1); bottom: -100px; left: -100px; }
+.s3 h2 { font-size: 14px; font-weight: 600; color: #10b981; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px; }
+.s3 h3 { font-size: 48px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 48px; color: #fff; line-height: 1.15; }
+.s3 h3 em { font-style: normal; color: #10b981; }
+.solution-flow { display: flex; align-items: center; gap: 0; flex: 1; justify-content: center; }
+.sol-step { text-align: center; flex: 1; }
+.sol-step .icon { width: 64px; height: 64px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 28px; margin: 0 auto 12px; }
+.sol-step .icon.i1 { background: rgba(99,102,241,0.2); }
+.sol-step .icon.i2 { background: rgba(16,185,129,0.2); }
+.sol-step .icon.i3 { background: rgba(245,158,11,0.2); }
+.sol-step .icon.i4 { background: rgba(236,72,153,0.2); }
+.sol-step .icon.i5 { background: rgba(99,102,241,0.2); }
+.sol-step h4 { font-size: 15px; font-weight: 700; color: rgba(255,255,255,0.85); margin-bottom: 4px; }
+.sol-step p { font-size: 12px; color: rgba(255,255,255,0.4); }
+.sol-arrow { font-size: 20px; color: rgba(255,255,255,0.15); padding: 0 4px; }
+
+/* ===== SLIDE 4: Architecture ===== */
+.s4 .bg-glow { width: 500px; height: 500px; background: rgba(99,102,241,0.1); top: 50%; left: 50%; transform: translate(-50%,-50%); }
+.s4 h2 { font-size: 14px; font-weight: 600; color: #818cf8; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px; }
+.s4 h3 { font-size: 44px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 40px; }
+.arch-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; flex: 1; }
+.arch-box { padding: 24px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); }
+.arch-box .label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; padding: 4px 10px; border-radius: 6px; display: inline-block; }
+.arch-box .label.frontend { background: rgba(99,102,241,0.2); color: #a5b4fc; }
+.arch-box .label.agents { background: rgba(16,185,129,0.2); color: #6ee7b7; }
+.arch-box .label.infra { background: rgba(245,158,11,0.2); color: #fcd34d; }
+.arch-box h4 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+.arch-box ul { list-style: none; }
+.arch-box ul li { font-size: 13px; color: rgba(255,255,255,0.5); padding: 4px 0; padding-left: 16px; position: relative; }
+.arch-box ul li::before { content: "→"; position: absolute; left: 0; color: rgba(255,255,255,0.2); }
+
+/* ===== SLIDE 5: Tech Stack ===== */
+.s5 .bg-glow { width: 500px; height: 500px; background: rgba(237,28,36,0.08); top: -100px; right: -50px; }
+.s5 h2 { font-size: 14px; font-weight: 600; color: #f87171; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px; }
+.s5 h3 { font-size: 44px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 40px; }
+.s5 h3 em { font-style: normal; color: #f87171; }
+.tech-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.tech-card { padding: 24px; border-radius: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); text-align: center; }
+.tech-card .emoji { font-size: 36px; margin-bottom: 10px; }
+.tech-card h4 { font-size: 16px; font-weight: 700; margin-bottom: 4px; color: rgba(255,255,255,0.9); }
+.tech-card p { font-size: 12px; color: rgba(255,255,255,0.4); }
+
+/* ===== SLIDE 6: Demo ===== */
+.s6 { justify-content: center; align-items: center; text-align: center; }
+.s6 .bg-glow { width: 800px; height: 800px; background: rgba(99,102,241,0.08); top: 50%; left: 50%; transform: translate(-50%,-50%); }
+.s6 h2 { font-size: 14px; font-weight: 600; color: #818cf8; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px; }
+.s6 h3 { font-size: 56px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 20px; }
+.s6 p { font-size: 20px; color: rgba(255,255,255,0.5); max-width: 600px; margin-bottom: 40px; }
+.demo-url { display: inline-flex; padding: 12px 28px; border-radius: 12px; background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.3); color: #a5b4fc; font-size: 16px; font-weight: 600; font-family: ui-monospace, monospace; }
+
+/* ===== SLIDE 7: Team ===== */
+.s7 .bg-glow { width: 500px; height: 500px; background: rgba(16,185,129,0.08); bottom: -100px; right: -100px; }
+.s7 h2 { font-size: 14px; font-weight: 600; color: #10b981; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px; }
+.s7 h3 { font-size: 44px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 48px; }
+.team-row { display: flex; gap: 40px; align-items: flex-start; margin-bottom: 48px; }
+.team-member { display: flex; gap: 20px; align-items: center; }
+.team-avatar { width: 72px; height: 72px; border-radius: 20px; background: linear-gradient(135deg, rgba(99,102,241,0.3), rgba(16,185,129,0.3)); display: flex; align-items: center; justify-content: center; font-size: 32px; flex-shrink: 0; }
+.team-info h4 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+.team-info p { font-size: 14px; color: rgba(255,255,255,0.45); }
+.hackathon-info { padding: 24px 32px; border-radius: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); display: inline-flex; flex-direction: column; gap: 8px; }
+.hackathon-info .line { font-size: 15px; color: rgba(255,255,255,0.5); }
+.hackathon-info .line strong { color: rgba(255,255,255,0.8); }
+
+/* Nav hint */
+.nav-hint {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 12px;
+  color: rgba(255,255,255,0.15);
+  z-index: 100;
+}
+
+/* Keyboard nav */
+</style>
+</head>
+<body>
+
+<!-- SLIDE 1: Title -->
+<div class="slide s1">
+  <div class="bg-glow"></div>
+  <div class="bg-glow2"></div>
+  <div class="badge">🚉 AMD Developer Hackathon 2026 — Track 1: AI Agents</div>
+  <div class="title-block" style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+    <h1>KadiRail AI</h1>
+    <p class="sub">ระบบนำทางกฎหมายไทยอัจฉริยะ<br>ขับเคลื่อนด้วย <strong>Multi-Agent AI</strong> บน <strong>AMD Instinct MI300X</strong></p>
+  </div>
+  <div class="meta">
+    <span>Team <strong>NovaPulse</strong></span>
+    <span>•</span>
+    <span>Dr.solodev</span>
+  </div>
+  <span class="slide-num">01 / 07</span>
+</div>
+
+<!-- SLIDE 2: Problem -->
+<div class="slide s2">
+  <div class="bg-glow"></div>
+  <h2>Problem</h2>
+  <h3>ปัญหาที่คนไทย <em>เข้าไม่ถึง</em> กระบวนการยุติธรรม</h3>
+  <div class="problem-grid">
+    <div class="problem-card">
+      <div class="num">01</div>
+      <h4>ค่าทนายแพง</h4>
+      <p>ค่าปรึกษาทนาย 2,000-5,000 บาท/ครั้ง คนทั่วไปไม่มีกำลังจ่าย</p>
+    </div>
+    <div class="problem-card">
+      <div class="num">02</div>
+      <h4>กฎหมายซับซ้อน</h4>
+      <p>พ.ร.บ. กว่า 800 ฉบับ ประชาชนไม่รู้สิทธิ์ของตัวเอง</p>
+    </div>
+    <div class="problem-card">
+      <div class="num">03</div>
+      <h4>อคติในกระบวนการ</h4>
+      <p>ไม่มีเครื่องมือตรวจจับอคติในเอกสารกฎหมาย เช่น เพศ อายุ สถานะ</p>
+    </div>
+    <div class="problem-card">
+      <div class="num">04</div>
+      <h4>ขาดข้อมูลเชิงกลยุทธ์</h4>
+      <p>ไม่รู้โอกาสชนะ ไม่รู้ค่าใช้จ่าย ไม่รู้ระยะเวลา ก่อนตัดสินใจฟ้อง</p>
+    </div>
+  </div>
+  <span class="slide-num">02 / 07</span>
+</div>
+
+<!-- SLIDE 3: Solution -->
+<div class="slide s3">
+  <div class="bg-glow"></div>
+  <h2>Solution</h2>
+  <h3>KadiRail AI — <em>นำทาง</em>ทุกขั้นตอนกฎหมาย</h3>
+  <div class="solution-flow">
+    <div class="sol-step">
+      <div class="icon i1">📄</div>
+      <h4>ใส่เอกสาร</h4>
+      <p>อัพโหลดหรือพิมพ์<br>รายละเอียดคดี</p>
+    </div>
+    <div class="sol-arrow">→</div>
+    <div class="sol-step">
+      <div class="icon i2">⚖️</div>
+      <h4>วิเคราะห์คดี</h4>
+      <p>Legal Analysis Agent<br>จำแนกประเภท + กฎหมาย</p>
+    </div>
+    <div class="sol-arrow">→</div>
+    <div class="sol-step">
+      <div class="icon i3">🎯</div>
+      <h4>จำลองผลลัพธ์</h4>
+      <p>Case Strategy Agent<br>โอกาสชนะ + ค่าใช้จ่าย</p>
+    </div>
+    <div class="sol-arrow">→</div>
+    <div class="sol-step">
+      <div class="icon i4">🔍</div>
+      <h4>ตรวจอคติ</h4>
+      <p>Bias Audit Agent<br>ตรวจจับ + ปกป้อง PII</p>
+    </div>
+    <div class="sol-arrow">→</div>
+    <div class="sol-step">
+      <div class="icon i5">📚</div>
+      <h4>ค้นคำพิพากษา</h4>
+      <p>Case Law Agent<br>คดีตัวอย่าง + หลักกฎหมาย</p>
+    </div>
+  </div>
+  <span class="slide-num">03 / 07</span>
+</div>
+
+<!-- SLIDE 4: Architecture -->
+<div class="slide s4">
+  <div class="bg-glow"></div>
+  <h2>Architecture</h2>
+  <h3>Multi-Agent System Architecture</h3>
+  <div class="arch-grid">
+    <div class="arch-box">
+      <div class="label frontend">Frontend</div>
+      <h4>User Interface</h4>
+      <ul>
+        <li>Streamlit Web App</li>
+        <li>Interactive dashboard</li>
+        <li>Real-time agent status</li>
+        <li>Case timeline visualization</li>
+        <li>Mermaid diagrams</li>
+      </ul>
+    </div>
+    <div class="arch-box">
+      <div class="label agents">Agent Layer</div>
+      <h4>4 Specialized Agents</h4>
+      <ul>
+        <li>Orchestrator (coordinator)</li>
+        <li>Legal Analysis Agent</li>
+        <li>Case Strategy Agent</li>
+        <li>Bias Audit Agent</li>
+        <li>Case Law Agent</li>
+      </ul>
+    </div>
+    <div class="arch-box">
+      <div class="label infra">Infrastructure</div>
+      <h4>AMD-Powered Backend</h4>
+      <ul>
+        <li>Qwen2-7B-Instruct</li>
+        <li>vLLM inference server</li>
+        <li>ROCm 6.x runtime</li>
+        <li>AMD Instinct MI300X GPU</li>
+        <li>AMD Developer Cloud</li>
+      </ul>
+    </div>
+  </div>
+  <span class="slide-num">04 / 07</span>
+</div>
+
+<!-- SLIDE 5: Tech Stack -->
+<div class="slide s5">
+  <div class="bg-glow"></div>
+  <h2>Tech Stack</h2>
+  <h3>Powered by <em>AMD</em> Hardware</h3>
+  <div class="tech-grid">
+    <div class="tech-card">
+      <div class="emoji">🧠</div>
+      <h4>Qwen2-7B</h4>
+      <p>Open-weight LLM<br>Thai language support</p>
+    </div>
+    <div class="tech-card">
+      <div class="emoji">⚡</div>
+      <h4>vLLM</h4>
+      <p>High-throughput<br>inference engine</p>
+    </div>
+    <div class="tech-card">
+      <div class="emoji">🔴</div>
+      <h4>ROCm</h4>
+      <p>AMD GPU compute<br>platform</p>
+    </div>
+    <div class="tech-card">
+      <div class="emoji">💎</div>
+      <h4>MI300X</h4>
+      <p>192GB HBM3<br>AMD Instinct GPU</p>
+    </div>
+    <div class="tech-card">
+      <div class="emoji">🐍</div>
+      <h4>Python</h4>
+      <p>Agent framework<br>& orchestration</p>
+    </div>
+    <div class="tech-card">
+      <div class="emoji">📊</div>
+      <h4>Streamlit</h4>
+      <p>Interactive web UI<br>& data viz</p>
+    </div>
+    <div class="tech-card">
+      <div class="emoji">🔤</div>
+      <h4>PyThaiNLP</h4>
+      <p>Thai NLP processing<br>& tokenization</p>
+    </div>
+    <div class="tech-card">
+      <div class="emoji">🐙</div>
+      <h4>GitHub</h4>
+      <p>Version control<br>& CI/CD</p>
+    </div>
+  </div>
+  <span class="slide-num">05 / 07</span>
+</div>
+
+<!-- SLIDE 6: Demo -->
+<div class="slide s6">
+  <div class="bg-glow"></div>
+  <h2>Live Demo</h2>
+  <h3>🚉 Try KadiRail AI Now</h3>
+  <p>ทดลองใช้ระบบนำทางกฎหมายไทยอัจฉริยะ</p>
+  <div class="demo-url">kadirail-ai-x79ec98hpqzelrtjlejlhl.streamlit.app</div>
+  <span class="slide-num">06 / 07</span>
+</div>
+
+<!-- SLIDE 7: Team -->
+<div class="slide s7">
+  <div class="bg-glow"></div>
+  <h2>Team</h2>
+  <h3>Team NovaPulse</h3>
+  <div class="team-row">
+    <div class="team-member">
+      <div class="team-avatar">👨‍💻</div>
+      <div class="team-info">
+        <h4>Dr.solodev</h4>
+        <p>Full-Cycle Developer<br>Solana / DeFi / AI Agent</p>
+      </div>
+    </div>
+    <div class="team-member">
+      <div class="team-avatar">⚡</div>
+      <div class="team-info">
+        <h4>Turbo AI</h4>
+        <p>AI Co-developer<br>Architecture / Agent Design</p>
+      </div>
+    </div>
+  </div>
+  <div class="hackathon-info">
+    <div class="line">🏆 <strong>AMD Developer Hackathon 2026</strong></div>
+    <div class="line">Track 1: AI Agents & Agentic Workflows</div>
+    <div class="line">🔴 AMD Instinct MI300X · ROCm · vLLM</div>
+    <div class="line">📍 Team NovaPulse · Thailand</div>
+  </div>
+  <span class="slide-num">07 / 07</span>
+</div>
+
+<div class="nav-hint">← Scroll or use arrow keys →</div>
+
+<script>
+document.addEventListener('keydown', (e) => {
+  const slides = document.querySelectorAll('.slide');
+  const sw = 1280;
+  const current = Math.round(document.body.scrollLeft / sw);
+  if (e.key === 'ArrowRight' || e.key === ' ') {
+    e.preventDefault();
+    const next = Math.min(current + 1, slides.length - 1);
+    document.body.scrollTo({ left: next * sw, behavior: 'smooth' });
+  } else if (e.key === 'ArrowLeft') {
+    e.preventDefault();
+    const prev = Math.max(current - 1, 0);
+    document.body.scrollTo({ left: prev * sw, behavior: 'smooth' });
+  }
+});
+</script>
+</body>
+</html>
