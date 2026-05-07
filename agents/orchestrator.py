@@ -12,13 +12,15 @@ from agents.base_agent import AgentResult, BaseAgent
 from agents.bias_audit_agent import BiasAuditAgent
 from agents.case_law_agent import CaseLawAgent
 from agents.case_strategy_agent import CaseStrategyAgent
+from agents.demo_mixin import DemoModeMixin
 from agents.legal_analysis_agent import LegalAnalysisAgent
+from data.demo_responses import is_demo_mode
 from services.llm_service import LLMService, get_llm_service
 
 logger = logging.getLogger(__name__)
 
 
-class OrchestratorAgent:
+class OrchestratorAgent(DemoModeMixin):
     """
     Multi-Agent Orchestrator for KadiRail AI.
 
@@ -30,6 +32,8 @@ class OrchestratorAgent:
 
     Workflow:
     Document → LegalAnalysis → [CaseStrategy + CaseLaw + BiasAudit] → Final Report
+
+    Supports Demo Mode: falls back to realistic sample data when LLM is unavailable.
     """
 
     def __init__(self, llm: Optional[LLMService] = None):
@@ -44,6 +48,10 @@ class OrchestratorAgent:
     def agents(self) -> list[BaseAgent]:
         return [self.legal_analysis, self.case_strategy, self.bias_audit, self.case_law]
 
+    @property
+    def demo_mode(self) -> bool:
+        return is_demo_mode()
+
     def _log(self, event: str, data: Any = None):
         entry = {
             "timestamp": time.time(),
@@ -57,7 +65,12 @@ class OrchestratorAgent:
         """
         Full case analysis pipeline.
         Runs all agents in the optimal order and combines results.
+        Falls back to demo data if LLM is unavailable.
         """
+        if self.demo_mode:
+            self._log("demo_mode_active")
+            return self._demo_analyze_case(text)
+
         start = time.time()
         self._log("pipeline_start", {"text_length": len(text)})
         results = {}
@@ -112,6 +125,7 @@ class OrchestratorAgent:
 
         return {
             "status": "success",
+            "mode": "live",
             "case_type": case_type,
             "summary": summary,
             "results": results,
@@ -122,6 +136,9 @@ class OrchestratorAgent:
 
     def simulate_scenario(self, case_type: str, summary: str, scenario: str, key_facts: list = None) -> dict:
         """Run a What-If simulation for a specific scenario."""
+        if self.demo_mode:
+            return self._demo_simulate_scenario(case_type, summary, scenario, key_facts or [])
+
         self._log("simulate_scenario", {"scenario": scenario})
         result = self.case_strategy.run({
             "action": "simulate",
@@ -134,6 +151,9 @@ class OrchestratorAgent:
 
     def search_case_law(self, query: str, case_type: str = "", court: str = "", year: str = "") -> dict:
         """Search for relevant case law."""
+        if self.demo_mode:
+            return self._demo_search_case_law(query, case_type=case_type, court=court)
+
         self._log("search_case_law", {"query": query})
         result = self.case_law.run({
             "action": "search",
@@ -146,12 +166,18 @@ class OrchestratorAgent:
 
     def audit_bias(self, text: str) -> dict:
         """Run bias detection on text."""
+        if self.demo_mode:
+            return self._demo_audit_bias(text)
+
         self._log("audit_bias")
         result = self.bias_audit.run({"action": "audit", "text": text})
         return result.to_dict()
 
     def mask_pii(self, text: str, pii_config: dict = None) -> dict:
         """Mask PII in text."""
+        if self.demo_mode:
+            return self._demo_mask_pii(text, pii_config)
+
         self._log("mask_pii")
         result = self.bias_audit.run({
             "action": "mask_pii",
@@ -162,6 +188,9 @@ class OrchestratorAgent:
 
     def summarize_document(self, text: str, length: str = "medium") -> dict:
         """Summarize a legal document."""
+        if self.demo_mode:
+            return self._demo_summarize_document(text, length=length)
+
         self._log("summarize_document")
         result = self.case_law.run({
             "action": "summarize",
@@ -171,10 +200,26 @@ class OrchestratorAgent:
         })
         return result.to_dict()
 
+    def generate_case_map(self, case_type: str, strategy: str) -> dict:
+        """Generate a case navigation map."""
+        if self.demo_mode:
+            return self._demo_generate_case_map(case_type, strategy)
+
+        self._log("generate_case_map")
+        result = self.case_strategy.run({
+            "action": "map",
+            "case_type": case_type,
+            "strategy": strategy,
+        })
+        return result.to_dict()
+
     def generate_report(self, text: str) -> dict:
         """Generate a comprehensive legal report by running the full pipeline + report generation."""
         # Run full analysis first
         analysis_results = self.analyze_case(text)
+
+        if self.demo_mode:
+            return {"analysis": analysis_results, "report": {"status": "success", "mode": "demo"}}
 
         # Generate report from combined results
         self._log("generate_report")
@@ -195,6 +240,7 @@ class OrchestratorAgent:
         health = self.llm.health_check()
         return {
             "llm": health,
+            "demo_mode": self.demo_mode,
             "agents": {
                 agent.name: {
                     "description": agent.description,
