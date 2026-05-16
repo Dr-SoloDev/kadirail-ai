@@ -29,28 +29,57 @@ class CaseStrategyAgent(BaseAgent):
 
     @property
     def system_prompt(self) -> str:
-        return """You are a Thai legal strategy advisor specializing in labor law.
-You help plaintiffs understand their options, likely outcomes, and costs.
+        return """You are a Thai labour-law strategy advisor with deep expertise in the Thai Labour Court system.
 
-Your expertise includes:
-- Thai labor court procedures and timelines
-- Settlement vs. litigation trade-offs
-- Cost estimation for legal proceedings in Thailand
-- Success rate analysis based on case characteristics
+## Role
+Help plaintiffs (employees) understand their legal options, realistic outcomes, timelines, and costs.
+Your advice must be grounded in Thai procedural law — not generic assumptions.
+When uncertain, say so. Never overstate win probability.
 
-Thai labor court process:
-1. ยื่นคำร้อง (File complaint) → 1-2 weeks
-2. ไกล่เกลี่ย (Mediation) → 1-3 months
-3. พิจารณาคดี (Trial) → 3-6 months
-4. คำพิพากษา (Judgment) → 1-2 months after trial
-5. อุทธรณ์ (Appeal) → 6-12 months (optional)
+## Thai Labour Court procedure (ศาลแรงงาน)
+1. **ยื่นคำร้อง** — File at Labour Court. No filing fee (คดีแรงงานไม่เสียค่าธรรมเนียมศาล).
+   Deadline: must file within 1 year of cause of action (อายุความ 1 ปี).
+2. **นัดพิจารณา / ไกล่เกลี่ย** — Court schedules first hearing + mediation attempt (7–30 days post-filing).
+3. **สืบพยานโจทก์** — Plaintiff presents evidence and witnesses.
+4. **สืบพยานจำเลย** — Defendant presents evidence and witnesses.
+5. **ศาลพิพากษา** — Judgment. Labour courts are faster than civil courts.
+6. **อุทธรณ์ (optional)** — Appeal to Labour Court of Appeal (ศาลอุทธรณ์คดีชำนัญพิเศษ) within 15 days.
 
-Costs typically range:
-- Filing fee: ฿0 (labor cases are free)
-- Lawyer fee: ฿10,000-50,000 per case
-- Travel/misc: ฿2,000-10,000
+## Realistic timeline benchmarks (Bangkok Labour Court, 2024–2026)
+- Mediation success → case closes in 1–3 months
+- Full trial, no appeal → 4–8 months from filing
+- Appeal added → additional 6–18 months
+- Enforcement (บังคับคดี) if employer defaults → additional 1–3 months
 
-Always provide realistic, evidence-based estimates. Respond in the requested format."""
+## Cost benchmarks
+- Court filing fee: ฿0
+- Lawyer consultation: ฿500–2,000/hour
+- Lawyer full representation: ฿15,000–60,000 depending on complexity
+- Witness/document costs: ฿1,000–5,000
+- Labour Department complaint (กรมสวัสดิการและคุ้มครองแรงงาน): free, faster but limited remedies
+
+## Strategy options
+- **litigation** (ฟ้องศาลแรงงาน): highest potential recovery, slowest
+- **mediation** (ไกล่เกลี่ย): fast, certain outcome, but typically 60–80% of full claim
+- **settlement** (ยอมความ): direct negotiation, quickest cash, employer retains leverage
+- **labour_dept_complaint** (ร้องเรียนกรมสวัสดิการฯ): free, good for wage theft, limited for unfair termination
+- **appeal_judgment** (อุทธรณ์): only if judgment is clearly wrong on law, costly in time
+
+## Win probability guidance
+Base rates for well-documented Thai labour cases (adjust per facts):
+- wage_theft with payslip evidence: 75–90%
+- unfair_termination, no written warning: 65–80%
+- unfair_termination, employer has documented cause: 30–50%
+- bonus_dispute, written policy exists: 60–75%
+- bonus_dispute, discretionary only: 25–45%
+Flag as [model knowledge — verify] when citing specific rates.
+
+## Output rules
+- Respond ONLY with valid JSON.
+- All Thai text in values, English keys.
+- Cite มาตรา for every legal obligation mentioned.
+- Compensation ranges should show min–max and label as [verify].
+- Never fabricate court case numbers or statute sections."""
 
     def execute(self, task: dict[str, Any]) -> AgentResult:
         action = task.get("action", "simulate")
@@ -75,7 +104,7 @@ Always provide realistic, evidence-based estimates. Respond in the requested for
 
         facts_str = "\n".join(f"- {f}" for f in key_facts) if key_facts else "No specific facts provided"
 
-        prompt = f"""Simulate the legal outcome for this Thai labor case.
+        prompt = f"""Simulate the legal outcome for this Thai labour case. Apply realistic Thai Labour Court benchmarks.
 
 Case Type: {case_type}
 Summary: {case_summary}
@@ -83,21 +112,25 @@ Scenario: {scenario}
 Key Facts:
 {facts_str}
 
-Analyze and respond in JSON:
+Return ONLY valid JSON:
 {{
     "scenario_name": "{scenario}",
     "scenario_thai": "ชื่อสถานการณ์ภาษาไทย",
     "win_rate": 0-100,
-    "estimated_duration_days": number,
-    "estimated_cost_thb": number,
+    "win_rate_basis": "เหตุผลที่ประเมิน win rate นี้ [model knowledge — verify]",
+    "estimated_duration_days": 0,
+    "estimated_cost_thb": 0,
+    "recommended_strategy": "litigation|mediation|settlement|labour_dept_complaint",
     "timeline": [
-        {{"step": "ขั้นตอน", "duration_days": number, "description": "รายละเอียด"}}
+        {{"step": "ชื่อขั้นตอน", "duration_days": 0, "description": "รายละเอียด"}}
     ],
     "risks": ["ความเสี่ยงที่อาจเกิดขึ้น"],
-    "opportunities": ["โอกาสที่ดี"],
-    "recommendations": ["คำแนะนำ"],
-    "best_case": "ผลลัพธ์ดีที่สุด",
-    "worst_case": "ผลลัพธ์แย่ที่สุด"
+    "opportunities": ["โอกาสที่เป็นประโยชน์"],
+    "recommendations": ["คำแนะนำเชิงปฏิบัติ"],
+    "evidence_needed": ["หลักฐานที่ควรรวบรวม"],
+    "best_case": "ผลลัพธ์ดีที่สุด พร้อมจำนวนเงิน [verify]",
+    "worst_case": "ผลลัพธ์แย่ที่สุด",
+    "statute_of_limitations_note": "อายุความ: ต้องยื่นภายใน 1 ปีนับแต่วันเลิกจ้าง/ค้างค่าจ้าง"
 }}"""
 
         result = self.ask_llm_json(prompt, fallback={
@@ -131,7 +164,7 @@ Analysis: {str(analysis)[:2000]}
 Consider:
 1. Should they settle or go to trial?
 2. What evidence do they need?
-3. What's the optimal timeline?
+3. What is the optimal timeline?
 4. Any leverage points?
 
 Respond in JSON:
@@ -144,9 +177,9 @@ Respond in JSON:
     ],
     "evidence_needed": ["หลักฐานที่ต้องรวบรวม"],
     "estimated_outcome": {{
-        "compensation_range_thb": [min, max],
-        "duration_days": number,
-        "success_probability": 0-100
+        "compensation_range_thb": [0, 0],
+        "duration_days": 0,
+        "success_probability": 0
     }},
     "warnings": ["ข้อควรระวัง"]
 }}"""
@@ -170,31 +203,32 @@ Respond in JSON:
         strategy = task.get("strategy", "litigation")
 
         prompt = f"""Generate a detailed step-by-step legal process map for a Thai {case_type} case
-using the {strategy} strategy.
+using the {strategy} strategy. Each step = one station on a railway map.
 
-Each step should be like a train station on a railway map.
-
-Respond in JSON:
+Return ONLY valid JSON:
 {{
     "case_type": "{case_type}",
     "strategy": "{strategy}",
-    "total_steps": number,
-    "total_duration_days": number,
+    "total_steps": 0,
+    "total_duration_days": 0,
     "steps": [
         {{
             "step_number": 1,
-            "title": "ชื่อขั้นตอน",
+            "title": "ชื่อขั้นตอนภาษาไทย",
             "title_en": "Step name in English",
-            "description": "รายละเอียด",
-            "duration_days": number,
+            "description": "รายละเอียดสิ่งที่ต้องทำ",
+            "duration_days": 0,
             "required_documents": ["เอกสารที่ต้องใช้"],
-            "cost_thb": number,
-            "tips": "เคล็ดลับ",
-            "alternatives": ["ทางเลือกอื่น"],
+            "cost_thb": 0,
+            "tips": "เคล็ดลับสำคัญ",
+            "legal_basis": "มาตราที่เกี่ยวข้อง [กฎหมาย]",
             "risk_level": "high|medium|low"
         }}
     ],
-    "mermaid_diagram": "graph LR\\n  A[step1] --> B[step2] --> C[step3]"
+    "mermaid_diagram": "graph LR\\n  A[ขั้นตอน 1] --> B[ขั้นตอน 2]",
+    "key_deadlines": [
+        {{"deadline": "กำหนดเวลาสำคัญ", "consequence": "ผลถ้าพลาด"}}
+    ]
 }}"""
 
         result = self.ask_llm_json(prompt, fallback={

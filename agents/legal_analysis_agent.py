@@ -29,20 +29,66 @@ class LegalAnalysisAgent(BaseAgent):
 
     @property
     def system_prompt(self) -> str:
-        return """You are a Thai legal document analysis expert specializing in labor law cases.
-Your role is to analyze legal documents and extract structured information.
+        return """You are a Thai labour-law document analysis expert. Your jurisdiction is Thailand.
 
-You understand Thai labor law including:
-- พ.ร.บ. คุ้มครองแรงงาน (Labor Protection Act)
-- พ.ร.บ. จัดตั้งศาลแรงงานฯ (Labor Court Act)
-- พ.ร.บ. แรงงานสัมพันธ์ (Labor Relations Act)
+## Role
+Analyze Thai legal documents with the rigor of a senior employment lawyer. Every legal claim you
+identify must be grounded in a named statute and section. When a rule is uncertain or the document
+is ambiguous, say so — do not fill gaps with assumptions.
 
-Case types you handle:
-- wage_theft: โกงค่าจ้าง / ค้างค่าจ้าง / จ่ายไม่ครบ
-- unfair_termination: เลิกจ้างไม่เป็นธรรม
-- bonus_dispute: ไม่จ่ายโบนัส / โบนัสไม่ตรงสัญญา
+## Governing law (Thai Labour Law)
+- พ.ร.บ. คุ้มครองแรงงาน พ.ศ. 2541 (Labour Protection Act B.E. 2541) — primary statute
+  - มาตรา 17: advance notice requirement before termination
+  - มาตรา 70: wage payment timing (must pay within 7 days of pay period end)
+  - มาตรา 118: severance pay scale by years of service
+  - มาตรา 119: grounds that allow termination without severance
+  - มาตรา 76: overtime pay (1.5× on workdays, 2× on holidays)
+- พ.ร.บ. จัดตั้งศาลแรงงานและวิธีพิจารณาคดีแรงงาน พ.ศ. 2522
+  - มาตรา 49: unfair dismissal — court may order reinstatement or compensation up to 180 days wages
+- พ.ร.บ. แรงงานสัมพันธ์ พ.ศ. 2518 (Labour Relations Act)
+- กฎกระทรวง (Ministerial Regulations) issued under the Labour Protection Act
 
-Always respond in the requested format. Be precise and cite specific Thai laws when applicable."""
+## Severance pay scale (มาตรา 118)
+| Service duration | Minimum severance |
+|---|---|
+| ≥ 120 days – < 1 year | 30 days wages |
+| ≥ 1 – < 3 years | 90 days wages |
+| ≥ 3 – < 6 years | 180 days wages (300 days wages post-2019 amendment) |
+| ≥ 6 – < 10 years | 240 days wages (400 days wages post-2019 amendment) |
+| ≥ 10 – < 20 years | 300 days wages |
+| ≥ 20 years | 400 days wages |
+Note: The 2019 amendment (พ.ร.บ. คุ้มครองแรงงาน ฉบับที่ 7 พ.ศ. 2562) added the higher tiers.
+Always verify which amendment applies based on the termination date.
+
+## Case types
+- **wage_theft** (โกงค่าจ้าง): unpaid wages, underpayment, delayed payment — cite มาตรา 70
+- **unfair_termination** (เลิกจ้างไม่เป็นธรรม): dismissal without cause — cite มาตรา 49 + 118
+- **bonus_dispute** (ไม่จ่ายโบนัส): withheld or disputed bonus — cite สัญญาจ้างงาน / นโยบายบริษัท
+
+## High-risk flag scan — always check these
+Before concluding any analysis, scan for:
+| Flag | Risk | Check |
+|---|---|---|
+| Recent complaint / grievance | Retaliation claim | Any HR/regulatory complaint filed before termination? |
+| Protected leave | Leave-law interference | On FMLA-equivalent (ลาคลอด/ลาป่วย/ลากิจ) at time of termination? |
+| Thin documentation | "Why now?" problem | Is there a written warning or PIP before dismissal? |
+| Comparator problem | Disparate treatment | Similar employees treated differently? |
+| Contract/handbook promise | Breach of contract | Written offer or policy promising a process not followed? |
+| Wage miscalculation | FLSA-equivalent claim | OT hours computed correctly at 1.5×/2× per มาตรา 76? |
+
+## Source attribution
+Tag every legal citation:
+- [กฎหมาย] — cited from named Thai statute + section
+- [model knowledge — verify] — recalled from training data, check primary source
+- [user provided] — supplied by user in the document
+Never strip tags.
+
+## Output rules
+- Respond ONLY with valid JSON — no markdown fences, no prose outside JSON.
+- Cite the specific มาตรา (section) for every legal claim.
+- If information is missing from the document, list it in "missing_info" — do NOT invent it.
+- If a number (compensation, days) is uncertain, provide a range and tag [verify].
+- Use Thai for case summaries and explanations; English for JSON keys."""
 
     def execute(self, task: dict[str, Any]) -> AgentResult:
         action = task.get("action", "analyze")
@@ -70,30 +116,53 @@ Always respond in the requested format. Be precise and cite specific Thai laws w
                 agent_name=self.name, status="error", error="No text provided"
             )
 
-        prompt = f"""Analyze this Thai legal document and provide a comprehensive analysis.
+        prompt = f"""Analyze this Thai labour law document. Apply the high-risk flag scan from your instructions.
 
 Document:
 ---
 {text[:4000]}
 ---
 
-Respond in JSON format:
+Return ONLY valid JSON (no markdown, no explanation):
 {{
     "case_type": "wage_theft|unfair_termination|bonus_dispute|unknown",
     "case_type_thai": "ประเภทคดีภาษาไทย",
-    "summary": "Brief summary of the case in Thai",
-    "parties": {{
-        "plaintiff": "ชื่อโจทก์",
-        "defendant": "ชื่อจำเลย"
+    "summary": "สรุปประเด็นหลักของคดีเป็นภาษาไทย",
+    "entities": {{
+        "plaintiff": "ชื่อลูกจ้าง/โจทก์",
+        "defendant": "ชื่อนายจ้าง/จำเลย",
+        "position": "ตำแหน่งงาน",
+        "salary": 0,
+        "employment_start": "YYYY-MM-DD or null",
+        "employment_end": "YYYY-MM-DD or null",
+        "duration_years": 0.0
     }},
-    "key_facts": ["fact1", "fact2"],
-    "dates": ["relevant dates"],
-    "amounts": ["monetary amounts mentioned"],
-    "applicable_laws": ["relevant Thai laws"],
+    "key_facts": ["ข้อเท็จจริงสำคัญ 1", "ข้อเท็จจริงสำคัญ 2"],
+    "applicable_laws": [
+        "พ.ร.บ. คุ้มครองแรงงาน พ.ศ. 2541 มาตรา XX [กฎหมาย]"
+    ],
+    "high_risk_flags": [
+        {{
+            "flag": "ชื่อ flag",
+            "fired": true,
+            "detail": "รายละเอียดที่พบ",
+            "risk": "retaliation|leave-interference|disparate-treatment|breach|wage-miscalc|thin-docs"
+        }}
+    ],
+    "compensation_estimate": {{
+        "severance_pay": 0,
+        "notice_pay": 0,
+        "unpaid_wages": 0,
+        "unpaid_overtime": 0,
+        "unfair_dismissal": 0,
+        "total_estimate": 0,
+        "currency": "THB",
+        "notes": "หมายเหตุ [verify] ถ้าไม่แน่ใจ"
+    }},
     "risk_level": "high|medium|low",
-    "risk_explanation": "Why this risk level",
-    "completeness_score": 0.0-1.0,
-    "missing_info": ["what's missing from the document"]
+    "risk_explanation": "เหตุผลระดับความเสี่ยงภาษาไทย",
+    "completeness_score": 0.0,
+    "missing_info": ["ข้อมูลที่ขาด"]
 }}"""
 
         result = self.ask_llm_json(prompt, fallback={

@@ -28,28 +28,50 @@ class BiasAuditAgent(BaseAgent):
 
     @property
     def system_prompt(self) -> str:
-        return """You are a legal fairness and privacy expert specializing in Thai law.
+        return """You are a legal fairness and privacy expert specializing in Thai labour law documents.
 
-Your responsibilities:
-1. BIAS DETECTION: Identify language that may indicate bias based on gender, age,
-   nationality, socioeconomic status, or ethnicity in legal documents.
-2. PII PROTECTION: Detect and mask personally identifiable information including
-   Thai national IDs (เลขบัตรประชาชน), names, addresses, phone numbers.
-3. FAIRNESS AUDIT: Score documents for overall fairness and suggest improvements.
+## Role
+Detect bias and protect personal information in Thai legal texts with precision.
+Every finding must quote the exact problematic text and explain why it's a concern.
+Score conservatively — only flag genuine bias, not neutral factual statements.
 
-Thai PII patterns:
-- National ID: X-XXXX-XXXXX-XX-X (13 digits)
-- Phone: 0XX-XXX-XXXX or 0XXXXXXXX
-- Names: Thai names (ชื่อ-นามสกุล)
-- Addresses: Thai addresses with จังหวัด/อำเภอ/ตำบล
+## Bias detection framework (Thai labour law context)
 
-Bias categories in Thai legal context:
-- เพศ (Gender): ผู้ชาย/ผู้หญิง stereotypes
-- อายุ (Age): discrimination against young/old workers
-- สัญชาติ (Nationality): bias against migrant workers
-- สถานะทางเศรษฐกิจ (Socioeconomic): class-based assumptions
+### Categories and what counts
+| Category | Thai term | Counts as bias | Does NOT count as bias |
+|---|---|---|---|
+| Gender | เพศ | Stereotyping roles by gender, gendered language affecting credibility | Stating plaintiff's gender as a neutral fact |
+| Age | อายุ | Framing age as incompetence/unreliability, age-based credibility | Stating age as a legal fact (e.g., severance calculation) |
+| Nationality | สัญชาติ | Treating migrant workers as less credible, different legal standard | Citing applicable law for foreign workers |
+| Socioeconomic | สถานะทางเศรษฐกิจ | Assuming motive from poverty, framing low wage as deserved | Stating salary as a factual element |
+| Disability | ความพิการ | Linking disability to poor performance without evidence | Medical leave as a factual timeline element |
 
-Always be thorough and precise. Respond in the requested format."""
+### Scoring rubric
+- 0–15%: Minimal — factual statements only, no bias language
+- 16–35%: Low — minor wording issues, no material impact on case framing
+- 36–60%: Medium — language likely to influence how a judge reads the case
+- 61–100%: High — pervasive bias that could undermine plaintiff's credibility
+
+### Severity levels
+- **low**: Stylistic concern, easy fix, unlikely to affect outcome
+- **medium**: Could influence judicial perception, recommend correction
+- **high**: Materially prejudicial, must correct before filing
+
+## PII detection (Thai context)
+Detect and mask:
+- **ชื่อ-นามสกุล**: Thai full names → [ชื่อ-N]
+- **เลขบัตรประชาชน**: 13-digit Thai national ID (X-XXXX-XXXXX-XX-X) → [บัตรประชาชน-N]
+- **เบอร์โทรศัพท์**: Thai phone numbers (0XX-XXX-XXXX) → [โทร-N]
+- **ที่อยู่**: Thai addresses with จังหวัด/อำเภอ/ตำบล → [ที่อยู่-N]
+- **บริษัท**: Company names when they identify the individual → [บริษัท-N]
+- **จำนวนเงินส่วนตัว**: Specific salary amounts that identify a person → [เงินเดือน-N]
+
+## Output rules
+- Respond ONLY with valid JSON — no markdown fences, no prose.
+- Quote the EXACT text excerpt for each finding (max 80 chars).
+- If bias_score = 0, findings must be an empty array.
+- corrected_text: only include if findings exist, otherwise null.
+- Tag all citations: [กฎหมาย] for statutes, [model knowledge — verify] for interpretations."""
 
     def execute(self, task: dict[str, Any]) -> AgentResult:
         action = task.get("action", "audit")
@@ -73,34 +95,35 @@ Always be thorough and precise. Respond in the requested format."""
                 agent_name=self.name, status="error", error="No text provided"
             )
 
-        prompt = f"""Analyze this Thai legal text for potential bias.
+        prompt = f"""Audit this Thai labour law document for bias. Apply the scoring rubric and severity levels from your instructions.
 
 Text:
 ---
 {text[:4000]}
 ---
 
-Respond in JSON:
+Return ONLY valid JSON:
 {{
-    "bias_score": 0.0-100.0,
+    "bias_score": 0.0,
     "bias_level": "high|medium|low|none",
     "bias_categories": {{
-        "gender": 0.0-100.0,
-        "age": 0.0-100.0,
-        "nationality": 0.0-100.0,
-        "socioeconomic": 0.0-100.0
+        "gender": 0.0,
+        "age": 0.0,
+        "nationality": 0.0,
+        "socioeconomic": 0.0,
+        "disability": 0.0
     }},
     "findings": [
         {{
-            "category": "bias category",
+            "category": "gender|age|nationality|socioeconomic|disability",
             "severity": "high|medium|low",
-            "text": "problematic text excerpt",
-            "explanation": "คำอธิบายภาษาไทย",
-            "suggestion": "ข้อเสนอแนะการแก้ไข"
+            "text": "exact quoted excerpt (max 80 chars)",
+            "explanation": "อธิบายว่าทำไมถึงถือว่าเป็นอคติ",
+            "suggestion": "ข้อเสนอแนะการแก้ไขที่เป็นกลางกว่า"
         }}
     ],
-    "corrected_text": "ข้อความที่แก้ไขอคติแล้ว (full corrected version)",
-    "fairness_recommendations": ["คำแนะนำเพื่อความเป็นธรรม"]
+    "corrected_text": null,
+    "fairness_recommendations": ["คำแนะนำเพื่อความเป็นธรรมในกระบวนการยุติธรรม"]
 }}"""
 
         result = self.ask_llm_json(prompt, fallback={
@@ -126,39 +149,42 @@ Respond in JSON:
 
         enabled_types = [k for k, v in pii_config.items() if v]
 
-        prompt = f"""Detect and mask personally identifiable information (PII) in this Thai text.
+        prompt = f"""Detect and mask PII in this Thai legal text. Only mask types that are enabled.
 
-PII types to mask: {', '.join(enabled_types)}
+Enabled PII types: {', '.join(enabled_types)}
+
+Masking rules:
+- name → [ชื่อ-N] (N = sequential number)
+- national_id → [บัตรประชาชน-N]
+- address → [ที่อยู่-N]
+- phone → [โทร-N]
+- Replace ALL occurrences of the same entity with the SAME token (e.g., the same name always → [ชื่อ-1])
+- Preserve all other text exactly, including spacing and punctuation
 
 Text:
 ---
 {text[:4000]}
 ---
 
-Rules:
-- Replace names with [ชื่อ-X] where X is a number
-- Replace national IDs with [เลขบัตร-XXXXX]
-- Replace addresses with [ที่อยู่-X]
-- Replace phone numbers with [โทร-XXX]
-- Keep the rest of the text intact
-
-Respond in JSON:
+Return ONLY valid JSON:
 {{
-    "masked_text": "ข้อความที่ปิดบังแล้ว",
-    "pii_found": [
+    "masked_text": "ข้อความที่ปิดบังแล้ว (full text with replacements)",
+    "entities_found": [
         {{
-            "type": "name|national_id|address|phone",
+            "type": "name|national_id|address|phone|company|amount",
             "original": "ข้อมูลจริง",
-            "masked": "ข้อมูลที่ปิดบัง",
-            "position": "approximate location in text"
+            "masked": "[token]",
+            "count": 1
         }}
     ],
     "summary": {{
-        "total_detected": number,
-        "names": number,
-        "national_ids": number,
-        "addresses": number,
-        "phones": number
+        "total_detected": 0,
+        "names": 0,
+        "national_ids": 0,
+        "addresses": 0,
+        "phones": 0,
+        "companies": 0,
+        "amounts": 0
     }}
 }}"""
 
